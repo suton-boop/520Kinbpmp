@@ -38,4 +38,9 @@ class Activity extends Model
     {
         return $this->belongsTo(ReportSubmission::class);
     }
+
+    public function budget()
+    {
+        return $this->belongsTo(Anggaran::class, 'kode_rrkl', 'kode');
+    }
 }
