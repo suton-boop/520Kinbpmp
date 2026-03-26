@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { PlusIcon, EyeIcon, ArrowPathIcon, CheckCircleIcon } from '@heroicons/react/24/solid';
+import { PlusIcon, EyeIcon, ArrowPathIcon } from '@heroicons/react/24/solid';
 
 export default function Index({ auth, reports, userRole }) {
     
@@ -37,20 +37,17 @@ export default function Index({ auth, reports, userRole }) {
     };
 
     return (
-        <AuthenticatedLayout
-            user={auth.user}
-            header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Manajemen Projek & Kinerja</h2>}
-        >
-            <Head title="Manajemen Projek" />
+        <AuthenticatedLayout>
+            <Head title="Manajemen Projek - Dashboardkin 520" />
 
-            <div className="py-12 bg-gray-50 flex-1">
+            <div className="py-12 bg-gray-50 flex-1 min-h-screen">
                 <div className="mx-auto max-w-screen-2xl sm:px-6 lg:px-8 space-y-6">
 
                     {/* HERO & ACTIONS SECTION */}
                     <div className="bg-white p-6 shadow-sm sm:rounded-2xl border border-gray-100 flex flex-col md:flex-row items-center justify-between">
                         <div>
-                            <h3 className="text-2xl font-bold tracking-tight text-gray-900 border-l-4 border-amber-400 pl-3">Daftar Dokumen Kinerja</h3>
-                            <p className="mt-1 text-sm text-gray-500 pl-4">
+                            <h3 className="text-2xl font-bold tracking-tight text-gray-900 border-l-4 border-amber-400 pl-3 uppercase italic">Daftar Dokumen Kinerja</h3>
+                            <p className="mt-1 text-sm text-gray-400 font-bold uppercase tracking-widest pl-4">
                                 Atur dokumen perencanaan dan pelaporan realisasi kegiatan Anda di sini.
                             </p>
                         </div>
@@ -60,9 +57,9 @@ export default function Index({ auth, reports, userRole }) {
                                     href={route('reports.store')}
                                     method="post"
                                     as="button"
-                                    className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-500 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:from-amber-500 hover:to-amber-600 focus:bg-amber-600 active:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-md"
+                                    className="inline-flex items-center px-6 py-3 bg-blue-900 border border-transparent rounded-xl font-black text-xs text-white uppercase tracking-widest hover:bg-blue-950 focus:outline-none transition ease-in-out duration-150 shadow-lg"
                                 >
-                                    <PlusIcon className="w-5 h-5 mr-1" />
+                                    <PlusIcon className="w-5 h-5 mr-1 text-amber-400" />
                                     Buat Rencana Baru
                                 </Link>
                             )}
@@ -73,80 +70,77 @@ export default function Index({ auth, reports, userRole }) {
                     <div className="bg-white overflow-hidden shadow-sm sm:rounded-2xl border border-gray-100">
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50 text-gray-700">
+                                <thead className="bg-blue-900 text-white">
                                     <tr>
-                                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Pemilik Laporan</th>
-                                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Gugus Mutu</th>
-                                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Periode</th>
-                                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Jmh Kegiatan</th>
-                                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Status</th>
-                                        <th scope="col" className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider">Aksi</th>
+                                        <th scope="col" className="px-6 py-5 text-left text-[10px] font-black uppercase tracking-widest italic border-r border-blue-950/30">Pemilik Laporan</th>
+                                        <th scope="col" className="px-6 py-5 text-left text-[10px] font-black uppercase tracking-widest italic border-r border-blue-950/30">Gugus Mutu</th>
+                                        <th scope="col" className="px-6 py-5 text-left text-[10px] font-black uppercase tracking-widest italic border-r border-blue-950/30">Periode</th>
+                                        <th scope="col" className="px-6 py-5 text-left text-[10px] font-black uppercase tracking-widest italic border-r border-blue-950/30">Jmh Kegiatan</th>
+                                        <th scope="col" className="px-6 py-5 text-left text-[10px] font-black uppercase tracking-widest italic border-r border-blue-950/30">Status</th>
+                                        <th scope="col" className="px-6 py-5 text-center text-[10px] font-black uppercase tracking-widest italic">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-100">
                                     {reports && reports.length > 0 ? (
                                         reports.map((report) => (
-                                            <tr key={report.id} className="hover:bg-gray-50/50 transition duration-150">
-                                                <td className="px-6 py-4 whitespace-nowrap">
+                                            <tr key={report.id} className="hover:bg-blue-50/20 transition duration-150 group">
+                                                <td className="px-6 py-6 whitespace-nowrap border-r border-gray-50">
                                                     <div className="flex items-center">
-                                                        <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs">
+                                                        <div className="flex-shrink-0 h-10 w-10 rounded-xl bg-blue-900 flex items-center justify-center text-amber-400 font-black text-xs shadow-md">
                                                             {report.user?.name ? report.user.name.charAt(0) : 'U'}
                                                         </div>
                                                         <div className="ml-3">
-                                                            <p className="text-sm font-medium text-gray-900">{report.user?.name || 'Anda'}</p>
-                                                            <p className="text-xs text-gray-500">{report.user?.email}</p>
+                                                            <p className="text-sm font-black text-gray-900 uppercase tracking-tighter">{report.user?.name || 'Anda'}</p>
+                                                            <p className="text-[10px] text-gray-400 font-bold uppercase">{report.user?.email}</p>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200 shadow-sm">
+                                                <td className="px-6 py-6 whitespace-nowrap border-r border-gray-50">
+                                                    <span className="inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-black bg-gray-50 text-blue-900 border border-gray-200 uppercase tracking-widest">
                                                         {report.user?.gugus_mutu?.name || 'Umum'}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm font-semibold text-gray-900 border-b-2 border-amber-400 w-max pb-0.5">{report.period?.month_year || 'Tanpa Periode'}</div>
+                                                <td className="px-6 py-6 whitespace-nowrap border-r border-gray-50">
+                                                    <div className="text-sm font-black text-blue-900 uppercase italic tracking-tighter underline decoration-amber-400 decoration-4 underline-offset-4">{report.period?.month_year || 'Tanpa Periode'}</div>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-600 font-medium">
+                                                <td className="px-6 py-6 whitespace-nowrap border-r border-gray-50">
+                                                    <div className="text-[11px] text-gray-500 font-black uppercase tracking-widest">
                                                         {report.activities?.length || 0} Aktifitas
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={"px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full border shadow-sm " + getStatusStyle(report.approval_status)}>
+                                                <td className="px-6 py-6 whitespace-nowrap border-r border-gray-50">
+                                                    <span className={"px-3 py-1.5 inline-flex text-[10px] font-black rounded-lg border shadow-sm uppercase tracking-widest " + getStatusStyle(report.approval_status)}>
                                                         {getStatusText(report.approval_status)}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2 flex justify-center items-center">
-                                                    
-                                                    {/* TOMBOL REVIEW/INPUT */}
+                                                <td className="px-6 py-6 whitespace-nowrap text-center text-sm font-medium space-x-2 flex justify-center items-center">
                                                     <Link 
                                                         href={"/Project/" + report.id} 
-                                                        className="inline-flex items-center px-3 py-1.5 border border-indigo-200 rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors shadow-sm"
+                                                        className="inline-flex items-center px-4 py-2 border border-blue-900 rounded-xl text-blue-900 font-black text-[10px] uppercase tracking-widest hover:bg-blue-900 hover:text-white transition-all shadow-sm"
                                                     >
-                                                        <EyeIcon className="w-4 h-4 mr-1.5" />
+                                                        <EyeIcon className="w-4 h-4 mr-2" />
                                                         {(userRole === 'staff' || userRole === 'admin' || userRole === 'super-admin') && report.approval_status === 'Draft' ? 'Input Capaian' : 'Lihat Detail'}
                                                     </Link>
 
-                                                    {/* TOMBOL SUBMIT UNTUK STAF JIKA DRAFT/DITOLAK */}
                                                     {(userRole === 'staff' || userRole === 'admin' || userRole === 'super-admin') && (report.approval_status === 'Draft' || report.approval_status.includes('Rejected')) && (
-                                                        <div className="relative inline-block text-left group">
-                                                            <button className="inline-flex items-center px-3 py-1.5 border border-green-200 rounded-md text-green-700 bg-green-50 hover:bg-green-100 transition-colors shadow-sm">
-                                                                <ArrowPathIcon className="w-4 h-4 mr-1.5" /> Kirim
+                                                        <div className="relative inline-block text-left group/btn">
+                                                            <button className="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-xl font-black text-[10px] text-white uppercase tracking-widest hover:bg-green-700 transition-all shadow-md">
+                                                                <ArrowPathIcon className="w-4 h-4 mr-2" /> Kirim
                                                             </button>
                                                             
-                                                            <div className="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                                                                <div className="py-1">
+                                                            <div className="origin-top-right absolute right-0 mt-2 w-56 rounded-2xl shadow-2xl bg-white ring-1 ring-black ring-opacity-5 z-50 opacity-0 invisible group-hover/btn:opacity-100 group-hover/btn:visible transition-all duration-200 border border-gray-100">
+                                                                <div className="py-2">
                                                                     <button 
                                                                         onClick={() => submitAction(report.id, 'plan')}
-                                                                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-900 border-b border-gray-100"
+                                                                        className="block w-full text-left px-5 py-3 text-[11px] font-black text-gray-700 hover:bg-green-50 hover:text-green-900 border-b border-gray-50 uppercase tracking-widest italic"
                                                                     >
-                                                                        Ajukan Rencana (Seblm Tgl 20)
+                                                                        Ajukan Rencana
                                                                     </button>
                                                                     <button 
                                                                         onClick={() => submitAction(report.id, 'report')}
-                                                                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-900"
+                                                                        className="block w-full text-left px-5 py-3 text-[11px] font-black text-gray-700 hover:bg-green-50 hover:text-green-900 uppercase tracking-widest italic"
                                                                     >
-                                                                        Ajukan Laporan Capaian (Tgl 5)
+                                                                        Ajukan Laporan
                                                                     </button>
                                                                 </div>
                                                             </div>
@@ -157,13 +151,13 @@ export default function Index({ auth, reports, userRole }) {
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan="6" className="px-6 py-12 text-center">
+                                            <td colSpan="6" className="px-6 py-24 text-center">
                                                 <div className="flex flex-col items-center justify-center">
-                                                    <div className="rounded-full bg-gray-100 p-4 mb-3">
-                                                        <ArrowPathIcon className="h-8 w-8 text-gray-400" />
+                                                    <div className="rounded-full bg-gray-50 p-6 mb-4 border border-gray-100 shadow-inner">
+                                                        <ArrowPathIcon className="h-10 w-10 text-gray-300" />
                                                     </div>
-                                                    <h3 className="text-sm font-medium text-gray-900">Belum ada data Projek/Laporan</h3>
-                                                    <p className="mt-1 text-sm text-gray-500">Mulai dengan membuat rencana kegiatan pertama Anda.</p>
+                                                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.4em] italic mb-2">Belum ada data Projek/Laporan</h3>
+                                                    <p className="text-[10px] text-gray-300 font-bold uppercase tracking-widest">Mulai dengan membuat rencana kegiatan pertama Anda.</p>
                                                 </div>
                                             </td>
                                         </tr>
@@ -177,6 +171,3 @@ export default function Index({ auth, reports, userRole }) {
         </AuthenticatedLayout>
     );
 }
-
-
-

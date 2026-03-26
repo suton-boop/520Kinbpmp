@@ -6,9 +6,6 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, AreaChart, A
 import Modal from '@/Components/Modal';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
-import PrimaryButton from '@/Components/PrimaryButton';
-import SecondaryButton from '@/Components/SecondaryButton';
-import DangerButton from '@/Components/DangerButton';
 
 const formatRp = (number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(number);
@@ -111,8 +108,6 @@ export default function Index({ auth, anggaranData }) {
         });
     };
 
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-
     const totalAlokasi = anggaranData ? anggaranData.reduce((acc, curr) => acc + Number(curr.anggaran_alokasi), 0) : 0;
     const totalRealisasi = anggaranData ? anggaranData.reduce((acc, curr) => acc + Number(curr.anggaran_realisasi), 0) : 0;
     const sisaAnggaran = totalAlokasi - totalRealisasi;
@@ -123,30 +118,8 @@ export default function Index({ auth, anggaranData }) {
     ];
     
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col font-sans text-gray-900">
-            <Head title="Modul Anggaran - SIPEGA" />
-
-            {/* Header matches Dashboard.jsx */}
-            <header className="bg-amber-400 h-16 sticky top-0 z-50 shadow-md border-b border-amber-500">
-                <div className="max-w-screen-2xl mx-auto px-8 h-full flex items-center justify-between">
-                    <div className="flex items-center space-x-12">
-                        <div className="text-2xl font-black text-blue-900 uppercase tracking-tighter">Transformasi Organisasi</div>
-                        <nav className="flex items-center space-x-3">
-                             {[
-                                { name: 'Home', href: route('dashboard'), icon: HomeIcon },
-                                { name: 'Project', href: route('reports.index'), icon: BriefcaseIcon },
-                                { name: 'Anggaran', href: route('anggaran'), icon: CurrencyDollarIcon, active: true },
-                                { name: 'Users', href: route('users.index'), icon: UserGroupIcon }
-                             ].map(m => (
-                                <Link key={m.name} href={m.href} className={"flex items-center space-x-2 px-6 py-2.5 rounded-2xl transition-all " + (m.active ? 'bg-blue-900 text-white shadow-lg border border-blue-950' : 'hover:bg-amber-500 hover:font-bold text-blue-900')}>
-                                    <m.icon className={"h-5 w-5 " + (m.active ? 'text-amber-400' : 'text-blue-900')} /> 
-                                    <span className="uppercase text-[11px] font-black tracking-widest">{m.name}</span>
-                                </Link>
-                             ))}
-                        </nav>
-                    </div>
-                </div>
-            </header>
+        <AuthenticatedLayout>
+            <Head title="Modul Anggaran - Dashboardkin 520" />
 
             <main className="flex-1 max-w-screen-2xl mx-auto p-10 space-y-12 w-full">
                 
@@ -302,7 +275,6 @@ export default function Index({ auth, anggaranData }) {
 
             </main>
 
-            {/* Modal system matches Dashboard premium style but with custom forms */}
             <Modal show={isModalOpen} onClose={closeModal} maxWidth="3xl">
                 <form onSubmit={handleSubmit} className="p-12 relative overflow-hidden bg-white rounded-[40px]">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-amber-400/20 rounded-full blur-3xl -mr-16 -mt-16"></div>
@@ -381,6 +353,6 @@ export default function Index({ auth, anggaranData }) {
                     </div>
                 </div>
             </Modal>
-        </div>
+        </AuthenticatedLayout>
     );
 }
