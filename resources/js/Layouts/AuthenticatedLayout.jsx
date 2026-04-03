@@ -8,12 +8,14 @@ export default function AuthenticatedLayout({ children }) {
     const user = auth.user;
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
 
+    const isAdmin = user.roles && (user.roles.includes('admin') || user.roles.includes('super-admin'));
+
     const navigation = [
         { name: 'Home', href: route('dashboard'), icon: HomeIcon, active: route().current('dashboard') },
         { name: 'Project', href: route('reports.index'), icon: BriefcaseIcon, active: route().current('reports.*') },
         { name: 'Gugus Mutu', href: route('gugus-mutu-report.index'), icon: AcademicCapIcon, active: route().current('gugus-mutu-report.*') },
         { name: 'Anggaran', href: route('anggaran'), icon: CurrencyDollarIcon, active: route().current('anggaran') },
-        { name: 'Users', href: route('users.index'), icon: UserGroupIcon, active: route().current('users.*') }
+        ...(isAdmin ? [{ name: 'Users', href: route('users.index'), icon: UserGroupIcon, active: route().current('users.*') }] : [])
     ];
 
     return (
