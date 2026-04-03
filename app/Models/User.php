@@ -53,6 +53,9 @@ class User extends Authenticatable
     {
         return $this->belongsTo(\App\Models\GugusMutu::class, 'gugus_mutu_id');
     }
+
+    public function reportSubmissions()
+    {
+        return $this->hasMany(\App\Models\ReportSubmission::class);
+    }
 }
-
-

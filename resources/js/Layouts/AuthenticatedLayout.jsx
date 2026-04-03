@@ -1,5 +1,5 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
-import { HomeIcon, BriefcaseIcon, CurrencyDollarIcon, UserGroupIcon } from '@heroicons/react/24/solid';
+import { HomeIcon, BriefcaseIcon, CurrencyDollarIcon, UserGroupIcon, AcademicCapIcon } from '@heroicons/react/24/solid';
 import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 
@@ -8,6 +8,14 @@ export default function AuthenticatedLayout({ children }) {
     const user = auth.user;
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
 
+    const navigation = [
+        { name: 'Home', href: route('dashboard'), icon: HomeIcon, active: route().current('dashboard') },
+        { name: 'Project', href: route('reports.index'), icon: BriefcaseIcon, active: route().current('reports.*') },
+        { name: 'Gugus Mutu', href: route('gugus-mutu-report.index'), icon: AcademicCapIcon, active: route().current('gugus-mutu-report.*') },
+        { name: 'Anggaran', href: route('anggaran'), icon: CurrencyDollarIcon, active: route().current('anggaran') },
+        { name: 'Users', href: route('users.index'), icon: UserGroupIcon, active: route().current('users.*') }
+    ];
+
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col font-sans text-gray-900 overflow-x-hidden">
             <header className="bg-amber-400 h-16 sticky top-0 z-50 shadow-md border-b border-amber-500">
@@ -15,12 +23,7 @@ export default function AuthenticatedLayout({ children }) {
                     <div className="flex items-center space-x-12">
                         <Link href={route('dashboard')} className="text-xl font-black text-blue-900 uppercase tracking-tighter">Dashboardkin 520</Link>
                         <nav className="hidden md:flex items-center space-x-2">
-                             {[
-                                { name: 'Home', href: route('dashboard'), icon: HomeIcon, active: route().current('dashboard') },
-                                { name: 'Project', href: route('reports.index'), icon: BriefcaseIcon, active: route().current('reports.*') },
-                                { name: 'Anggaran', href: route('anggaran'), icon: CurrencyDollarIcon, active: route().current('anggaran') },
-                                { name: 'Users', href: route('users.index'), icon: UserGroupIcon, active: route().current('users.*') }
-                             ].map(m => (
+                             {navigation.map(m => (
                                 <Link key={m.name} href={m.href} className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl transition-all ${m.active ? 'bg-blue-900 text-white shadow-lg border border-blue-950 font-black' : 'text-blue-900 hover:bg-amber-500/80 hover:font-black'}`}>
                                     <m.icon className={`h-4 w-4 ${m.active ? 'text-amber-400' : 'text-blue-900'}`} /> 
                                     <span className="uppercase text-[11px] tracking-widest">{m.name}</span>
@@ -49,12 +52,7 @@ export default function AuthenticatedLayout({ children }) {
 
                 <div className={(showingNavigationDropdown ? 'block' : 'hidden') + ' md:hidden bg-amber-400 border-t border-amber-500 shadow-xl'}>
                     <div className="p-4 space-y-2">
-                         {[
-                            { name: 'Home', href: route('dashboard'), icon: HomeIcon, active: route().current('dashboard') },
-                            { name: 'Project', href: route('reports.index'), icon: BriefcaseIcon, active: route().current('reports.*') },
-                            { name: 'Anggaran', href: route('anggaran'), icon: CurrencyDollarIcon, active: route().current('anggaran') },
-                            { name: 'Users', href: route('users.index'), icon: UserGroupIcon, active: route().current('users.*') }
-                         ].map(m => (
+                         {navigation.map(m => (
                             <Link key={m.name} href={m.href} className={`flex items-center space-x-4 p-4 rounded-xl ${m.active ? 'bg-blue-900 text-white shadow-lg' : 'text-blue-900 hover:bg-amber-500'}`}>
                                 <m.icon className={`h-5 w-5 ${m.active ? 'text-amber-400' : 'text-blue-900'}`} />
                                 <span className="uppercase text-[11px] font-black tracking-widest">{m.name}</span>

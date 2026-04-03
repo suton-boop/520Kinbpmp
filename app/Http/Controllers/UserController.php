@@ -16,7 +16,8 @@ class UserController extends Controller
     {
         $users = User::with(['roles', 'gugusMutu'])->latest()->paginate(10);
         return Inertia::render('Users/Index', [
-            'users' => $users
+            'users' => $users,
+            'gugusMutus' => GugusMutu::all()
         ]);
     }
 
@@ -35,7 +36,7 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'role' => 'required|exists:roles,name',
-            'gugus_mutu_id' => 'nullable|exists:gugus_mutu,id',
+            'gugus_mutu_id' => 'nullable|exists:gugus_mutus,id',
         ]);
 
         $user = User::create([
@@ -65,7 +66,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
             'role' => 'required|exists:roles,name',
-            'gugus_mutu_id' => 'nullable|exists:gugus_mutu,id',
+            'gugus_mutu_id' => 'nullable|exists:gugus_mutus,id',
         ]);
 
         $user->update([

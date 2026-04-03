@@ -4,22 +4,20 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\ExcelImportController;
+use App\Http\Controllers\DashboardController;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
-});
+Route::get('/', [DashboardController::class, 'publicDashboard'])->name('welcome');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Reports Routes (Perencanaan & Pelaporan)
     Route::resource('Project', \App\Http\Controllers\ReportController::class)->names('reports')->parameter('Project', 'report');
     
+    // Gugus Mutu Report
+    Route::get('/gugus-mutu-report', [\App\Http\Controllers\GugusMutuReportController::class, 'index'])->name('gugus-mutu-report.index');
+
     // Rute Submit Plan: terikat aturan tgl 20
     Route::post('Project/{id}/submit-plan', [\App\Http\Controllers\ReportController::class, 'submitPlan'])
         ->middleware(\App\Http\Middleware\Check520Rule::class.':plan')
@@ -39,7 +37,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::middleware(['role:superadmin'])->group(function () {
+
+    Route::middleware(['role:superadmin|admin'])->group(function () {
+        // Specific routes MUST come before Resource routes to avoid parameter collision
+        Route::get('/users/export-template', [ExcelImportController::class, 'downloadTemplate'])->name('import.template');
+        Route::post('/import-program', [ExcelImportController::class, 'importProgram'])->name('import.program');
+        
         Route::resource('users', \App\Http\Controllers\UserController::class);
     });
 
@@ -60,10 +63,3 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 require __DIR__.'/auth.php';
-
-
-
-
-
-
-

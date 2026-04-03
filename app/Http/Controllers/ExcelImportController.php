@@ -1,0 +1,43 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Imports\ProgramImport;
+use App\Models\GugusMutu;
+use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\TemplateExport;
+use Illuminate\Support\Facades\Storage;
+
+class ExcelImportController extends Controller
+{
+    public function importProgram(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv|max:2048',
+            'gugus_mutu_id' => 'nullable|exists:gugus_mutus,id',
+        ]);
+
+        try {
+            Excel::import(new ProgramImport($request->gugus_mutu_id), $request->file('file'));
+            return redirect()->back()->with('success', 'Data Program berhasil diimport.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    public function downloadTemplate()
+    {
+        $fileName = 'template_import_kin520.xlsx';
+        
+        // Clear any previous output buffers to avoid corrupted files
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        return Excel::download(new TemplateExport, $fileName, \Maatwebsite\Excel\Excel::XLSX, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+        ]);
+    }
+}

@@ -15,6 +15,17 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         $year = $request->input('year', 2026);
+        return $this->getDashboardData($request, $user, $year, 'Dashboard');
+    }
+
+    public function publicDashboard(Request $request)
+    {
+        $year = $request->input('year', 2026);
+        return $this->getDashboardData($request, null, $year, 'Welcome');
+    }
+
+    private function getDashboardData(Request $request, $user, $year, $component)
+    {
         $today = Carbon::now();
 
         $reportQuery = ReportSubmission::with(['user.gugusMutu', 'period'])
@@ -22,12 +33,14 @@ class DashboardController extends Controller
                 $q->where('month_year', 'like', "%{$year}%");
             });
 
-        if ($user->hasRole('staff') && $user->gugus_mutu_id) {
-            $reportQuery->where('user_id', $user->id);
-        } elseif ($user->hasRole('manager') && $user->gugus_mutu_id) {
-            $reportQuery->whereHas('user', function($q) use ($user) {
-                $q->where('gugus_mutu_id', $user->gugus_mutu_id);
-            });
+        if ($user) {
+            if ($user->hasRole('staff') && $user->gugus_mutu_id) {
+                $reportQuery->where('user_id', $user->id);
+            } elseif ($user->hasRole('manager') && $user->gugus_mutu_id) {
+                $reportQuery->whereHas('user', function($q) use ($user) {
+                    $q->where('gugus_mutu_id', $user->gugus_mutu_id);
+                });
+            }
         }
 
         $submissions = $reportQuery->get();
@@ -83,7 +96,6 @@ class DashboardController extends Controller
 
         foreach ($months as $index => $m) {
             $monthNum = $index + 1;
-            // Simulated growth for demo
             $monthTarget = $totalAlokasiGlobal > 0 ? round(($totalAlokasiGlobal / 12) * $monthNum) : 0;
             $monthReal = $totalRealisasiGlobal > 0 ? round(($totalRealisasiGlobal / 12) * $monthNum * 0.82) : 0;
             
@@ -95,9 +107,7 @@ class DashboardController extends Controller
             ];
         }
 
-        $totalSubmissions = $submissions->count();
-
-        return Inertia::render('Dashboard', [
+        return Inertia::render($component, [
             'metrics' => [
                 'total_terkirim' => $submissions->whereIn('approval_status', ['Draft', 'Pending'])->count(),
                 'total_disetujui' => $submissions->where('approval_status', 'Approved')->count(),
@@ -113,7 +123,9 @@ class DashboardController extends Controller
             'invalidBudgets' => $invalidBudgets,
             'monthlyStats' => $monthlyStats, 
             'budgetStats' => $budgetStats,
-            'selectedYear' => $year             
+            'selectedYear' => $year,
+            'canLogin' => true,
+            'canRegister' => true             
         ]);
     }
 }
