@@ -12,11 +12,18 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
+        // 1. Pastikan peranan (Roles) utama tersedia
+        Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'user', 'guard_name' => 'web']);
+
+        // 2. Data Gugus Mutu
         $gugusData = ["GM1- PAUD", "GM2-SD", "GM3-SMP", "GM4-SMA", "GM5- UMUM"];
         foreach ($gugusData as $name) {
             GugusMutu::firstOrCreate(["name" => $name]);
         }
 
+        // 3. Daftar User Utama
         $users = [
             ["name" => "Administrator", "email" => "admin@admin.com", "role" => "admin", "gugus" => null],
             ["name" => "Manager", "email" => "manager@manager.com", "role" => "manager", "gugus" => "GM1- PAUD"],
@@ -44,7 +51,9 @@ class UserSeeder extends Seeder
                 $gugusId = $gugus ? $gugus->id : null;
             }
             $user = User::firstOrCreate(["email" => $u["email"]], ["name" => $u["name"], "password" => Hash::make("password"), "gugus_mutu_id" => $gugusId]);
-            $user->assignRole($u["role"]);
+            
+            // Assign roles safely manually if needed or via Spatie
+            $user->syncRoles([$u["role"]]);
         }
     }
 }
