@@ -17,14 +17,15 @@ class ReportController extends Controller
 
         if ($user->hasRole(['admin', 'super-admin'])) {
             // Admin bisa liat semua
-        } elseif ($user->hasRole('manager')) {
-            // Manager lihat laporannya sendiri dan laporan dari staf di gugus mutunya
-            $query->whereHas('user', function($q) use ($user) {
-                $q->where('gugus_mutu_id', $user->gugus_mutu_id);
-            });
-        } else {
-            // Staff hanya milik sendiri
-            $query->where('user_id', $user->id);
+        } elseif ($user->hasRole(['manager', 'staff', 'user'])) {
+            // Manager & Staff lihat laporan dari gugus mutunya agar bisa berkolaborasi
+            if ($user->gugus_mutu_id) {
+                $query->whereHas('user', function($q) use ($user) {
+                    $q->where('gugus_mutu_id', $user->gugus_mutu_id);
+                });
+            } else {
+                $query->where('user_id', $user->id);
+            }
         }
 
         $reports = $query->orderBy('created_at', 'desc')->get();

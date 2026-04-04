@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithStartRow;
+use Illuminate\Support\Facades\Log;
 
 class ProgramImport implements ToCollection, WithStartRow
 {
@@ -20,6 +21,7 @@ class ProgramImport implements ToCollection, WithStartRow
     public function __construct($gugusMutuId = null)
     {
         $this->gugusMutuId = $gugusMutuId;
+        // Default period jika tidak ditentukan
         $this->period = Period::firstOrCreate(
             ['month_year' => '01-2026'],
             ['start_date' => '2026-01-01', 'end_date' => '2026-12-31']
@@ -34,59 +36,76 @@ class ProgramImport implements ToCollection, WithStartRow
     public function collection(Collection $rows)
     {
         foreach ($rows as $row) {
-            $kode = trim($row[0]);
-            $kegiatan = $row[1];
-            $indikator = $row[2];
-            $hasil = $row[3];
-            $mekanisme = $row[4];
-            $peserta = $row[6];
-            $tempat = $row[7];
-            $anggaran = $row[8];
-            $start = $row[9];
-            $end = $row[10];
-            $gm_name = $row[11];
+            $kode = trim($row[0] ?? '');
+            $kegiatan = $row[1] ?? '';
+            $indikator = $row[2] ?? '';
+            $hasil = $row[3] ?? '';
+            $mekanisme = $row[4] ?? '';
+            $peserta = $row[6] ?? '';
+            $tempat = $row[7] ?? '';
+            $anggaran = $row[8] ?? '';
+            $start = $row[9] ?? '';
+            $end = $row[10] ?? '';
+            $gm_name = trim($row[11] ?? '');
 
-            if (preg_match('#^[A-Z]\.#i', $kode)) {
+            // Deteksi Judul Program (A. , B. , dst)
+            if (preg_match('/^[A-Z]\./i', $kode)) {
                 $this->currentProgram = $kegiatan;
                 continue;
             }
 
             if (empty($kegiatan)) continue;
 
+            // 1. Cari Gugus Mutu
             $gm = null;
             if ($this->gugusMutuId) {
                 $gm = GugusMutu::find($this->gugusMutuId);
-            } elseif ($gm_name) {
+            } elseif (!empty($gm_name)) {
                 $gm = GugusMutu::where('name', 'like', '%' . $gm_name . '%')->first();
             }
 
+            // 2. Cari User (Operator/User) di Gugus Mutu tersebut
             $userId = null;
             if ($gm) {
-                $staff = $gm->users()->whereHas('roles', function($q) {
-                    $q->where('name', 'staff');
+                // Cari user dengan role 'user' (Operator) di GM ini
+                $operator = $gm->users()->whereHas('roles', function($q) {
+                    $q->where('name', 'user');
                 })->first();
-                if ($staff) {
-                    $userId = $staff->id;
+                
+                if ($operator) {
+                    $userId = $operator->id;
+                } else {
+                    // Fallback ke manager jika operator tidak ada
+                    $manager = $gm->users()->whereHas('roles', function($q) {
+                        $q->where('name', 'manager');
+                    })->first();
+                    if ($manager) {
+                        $userId = $manager->id;
+                    }
                 }
             }
 
+            // 3. Last Fallback jika GM tidak ditemukan atau tidak ada user
             if (!$userId) {
-                $fallback = User::whereHas('roles', function($q) {
-                    $q->where('name', 'staff');
+                $fallbackUser = User::whereHas('roles', function($q) {
+                    $q->where('name', 'user');
                 })->first();
-                $userId = $fallback ? $fallback->id : (User::first() ? User::first()->id : null);
+                $userId = $fallbackUser ? $fallbackUser->id : ($gm ? ($gm->users()->first() ? $gm->users()->first()->id : (User::first() ? User::first()->id : null)) : (User::first() ? User::first()->id : null));
             }
 
             if (!$userId) continue;
 
+            // 4. Pastikan ReportSubmission ada untuk User tersebut
+            // Kita anggap import admin ini membuat 'Rencana' yang sudah 'Approved' agar bisa diproses langsung
             $submission = ReportSubmission::firstOrCreate([
                 'user_id' => $userId,
                 'period_id' => $this->period->id,
+                'form_type' => 'Rencana',
             ], [
-                'form_type' => 'plan',
-                'approval_status' => 'Draft',
+                'approval_status' => 'Approved',
             ]);
 
+            // 5. Buat Activity
             Activity::create([
                 'report_submission_id' => $submission->id,
                 'kode_pmo' => $kode,
@@ -120,9 +139,9 @@ class ProgramImport implements ToCollection, WithStartRow
         $lower = strtolower($val);
         foreach ($map as $m => $num) {
             if (str_contains($lower, $m)) {
-                return "2026-$num-01";
+                return date('Y') . "-$num-01";
             }
         }
-        return null;
+        return null; // Fallback ke null jika format tidak dikenal
     }
 }

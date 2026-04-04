@@ -34,9 +34,7 @@ class DashboardController extends Controller
             });
 
         if ($user) {
-            if ($user->hasRole('staff') && $user->gugus_mutu_id) {
-                $reportQuery->where('user_id', $user->id);
-            } elseif ($user->hasRole('manager') && $user->gugus_mutu_id) {
+            if ($user->hasRole(['manager', 'staff', 'user']) && $user->gugus_mutu_id) {
                 $reportQuery->whereHas('user', function($q) use ($user) {
                     $q->where('gugus_mutu_id', $user->gugus_mutu_id);
                 });
