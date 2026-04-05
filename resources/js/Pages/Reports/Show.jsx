@@ -81,7 +81,7 @@ export default function Show({ auth, report, userRole }) {
 
     const deleteActivity = (id) => {
         if(confirm('Apakah Anda yakin ingin menghapus data ini?')) {
-            router.delete('/activities/' + id, { preserveScroll: true });
+            router.delete(route('activities.destroy', id), { preserveScroll: true });
         }
     };
 
