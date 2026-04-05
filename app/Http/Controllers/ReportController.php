@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -29,10 +29,17 @@ class ReportController extends Controller
         }
 
         $reports = $query->orderBy('created_at', 'desc')->get();
+        $allowImport = false;
+        if ($user->gugus_mutu_id) {
+            $allowImport = (bool) \App\Models\GugusMutu::find($user->gugus_mutu_id)->allow_import;
+        } elseif ($user->hasRole(['admin', 'super-admin'])) {
+            $allowImport = true;
+        }
                     
         return Inertia::render('Reports/Index', [
             'reports' => $reports,
-            'userRole' => $user->roles->pluck('name')->first()
+            'userRole' => $user->roles->pluck('name')->first(),
+            'allowImport' => $allowImport,
         ]);
     }
 
@@ -43,13 +50,11 @@ class ReportController extends Controller
 
     public function store(Request $request)
     {
-        // Ambil atau buat periode otomatis untuk mempermudah testing (misal: 01-2026)
         $period = \App\Models\Period::firstOrCreate(
             ['month_year' => '01-2026'], 
             ['start_date' => '2026-01-01', 'end_date' => '2026-12-31']
         );
         
-        // Buat atau temukan Rencana (Draft) untuk user saat ini di periode tersebut
         $report = ReportSubmission::firstOrCreate([
             'user_id' => Auth::id(),
             'period_id' => $period->id,
@@ -58,24 +63,31 @@ class ReportController extends Controller
             'approval_status' => 'Draft',
         ]);
         
-        // Langsung arahkan ke halaman detail untuk mengisi kegiatan (Activities)
         return redirect()->route('reports.show', $report->id)->with('success', 'Rencana Pekerjaan Baru Berhasil Disiapkan.');
     }
 
     public function show($id)
     {
+        $user = Auth::user();
         $report = ReportSubmission::with(['activities', 'period', 'user'])->findOrFail($id);
+        
+        $allowImport = false;
+        if ($user->gugus_mutu_id) {
+            $allowImport = (bool) \App\Models\GugusMutu::find($user->gugus_mutu_id)->allow_import;
+        } elseif ($user->hasRole(['admin', 'super-admin'])) {
+            $allowImport = true;
+        }
+
         return Inertia::render('Reports/Show', [
             'report' => $report,
-            'userRole' => Auth::user()->roles->pluck('name')->first()
+            'userRole' => $user->roles->pluck('name')->first(),
+            'allowImport' => $allowImport,
         ]);
     }
 
     public function submitPlan(Request $request, $id)
     {
         $report = ReportSubmission::findOrFail($id);
-        
-        // Memastikan user yg login adalah pemilik (Kecuali Admin/Manajer berhak ikut campur jika dibutuhkan)
         if (!Auth::user()->hasRole(['admin', 'super-admin']) && $report->user_id !== Auth::id()) abort(403);
 
         $report->update(['approval_status' => 'Pending_Manager']);
@@ -91,5 +103,3 @@ class ReportController extends Controller
         return back()->with('success', 'Pelaporan Kinerja diajukan ke Manajer (Tahap 1).');
     }
 }
-
-

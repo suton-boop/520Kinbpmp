@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\TemplateExport;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 
 class ExcelImportController extends Controller
 {
@@ -18,8 +19,32 @@ class ExcelImportController extends Controller
             'gugus_mutu_id' => 'nullable|exists:gugus_mutus,id',
         ]);
 
+        $user = Auth::user();
+        $gugusMutuId = $request->gugus_mutu_id;
+
+        // If not admin, force them to use their assigned GM and check if enabled
+        if (!$user->hasRole(['admin', 'super-admin'])) {
+            $gugusMutuId = $user->gugus_mutu_id;
+            
+            if (!$gugusMutuId) {
+                return redirect()->back()->with('error', 'Anda tidak memiliki Gugus Mutu yang ditugaskan.');
+            }
+
+            $gm = GugusMutu::findOrFail($gugusMutuId);
+            if (!$gm->allow_import) {
+                return redirect()->back()->with('error', 'Fitur import saat ini dinonaktifkan oleh Admin.');
+            }
+        } else {
+            // For admin, if GM id is provided, verify it exists and is allowed (optional for admin, admin can do everything)
+            if ($gugusMutuId) {
+                 $gm = GugusMutu::findOrFail($gugusMutuId);
+                 // Admins can import even if it is not "allowed" globally for others, 
+                 // but let's keep it simple: admin is god.
+            }
+        }
+
         try {
-            Excel::import(new ProgramImport($request->gugus_mutu_id), $request->file('file'));
+            Excel::import(new ProgramImport($gugusMutuId), $request->file('file'));
             return redirect()->back()->with('success', 'Data Program berhasil diimport.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
@@ -30,7 +55,6 @@ class ExcelImportController extends Controller
     {
         $fileName = 'template_import_kin520.xlsx';
         
-        // Clear any previous output buffers to avoid corrupted files
         if (ob_get_level()) {
             ob_end_clean();
         }

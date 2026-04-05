@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\ExcelImportController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GugusMutuController;
 
 Route::get('/', [DashboardController::class, 'publicDashboard'])->name('welcome');
 
@@ -38,12 +39,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // Global components shared across roles
+    Route::get('/users/export-template', [ExcelImportController::class, 'downloadTemplate'])->name('import.template');
+    Route::post('/import-program', [ExcelImportController::class, 'importProgram'])->name('import.program');
+
     Route::middleware(['role:superadmin|admin'])->group(function () {
-        // Specific routes MUST come before Resource routes to avoid parameter collision
-        Route::get('/users/export-template', [ExcelImportController::class, 'downloadTemplate'])->name('import.template');
-        Route::post('/import-program', [ExcelImportController::class, 'importProgram'])->name('import.program');
-        
         Route::resource('users', \App\Http\Controllers\UserController::class);
+        Route::post('/gugus-mutu/{gugusMutu}/toggle-import', [GugusMutuController::class, 'toggleImport'])->name('gugus-mutu.toggle-import');
     });
 
 });
