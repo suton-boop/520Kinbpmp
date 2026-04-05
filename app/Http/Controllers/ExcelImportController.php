@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Http\Controllers;
 
@@ -22,7 +22,6 @@ class ExcelImportController extends Controller
         $user = Auth::user();
         $gugusMutuId = $request->gugus_mutu_id;
 
-        // If not admin, force them to use their assigned GM and check if enabled
         if (!$user->hasRole(['admin', 'super-admin'])) {
             $gugusMutuId = $user->gugus_mutu_id;
             
@@ -33,13 +32,6 @@ class ExcelImportController extends Controller
             $gm = GugusMutu::findOrFail($gugusMutuId);
             if (!$gm->allow_import) {
                 return redirect()->back()->with('error', 'Fitur import saat ini dinonaktifkan oleh Admin.');
-            }
-        } else {
-            // For admin, if GM id is provided, verify it exists and is allowed (optional for admin, admin can do everything)
-            if ($gugusMutuId) {
-                 $gm = GugusMutu::findOrFail($gugusMutuId);
-                 // Admins can import even if it is not "allowed" globally for others, 
-                 // but let's keep it simple: admin is god.
             }
         }
 

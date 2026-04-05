@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Http\Controllers;
 
@@ -16,9 +16,8 @@ class ReportController extends Controller
         $query = ReportSubmission::with(['period', 'activities', 'user.gugusMutu']);
 
         if ($user->hasRole(['admin', 'super-admin'])) {
-            // Admin bisa liat semua
+            //
         } elseif ($user->hasRole(['manager', 'staff', 'user'])) {
-            // Manager & Staff lihat laporan dari gugus mutunya agar bisa berkolaborasi
             if ($user->gugus_mutu_id) {
                 $query->whereHas('user', function($q) use ($user) {
                     $q->where('gugus_mutu_id', $user->gugus_mutu_id);
@@ -43,26 +42,16 @@ class ReportController extends Controller
         ]);
     }
 
-    public function create()
-    {
-        return Inertia::render('Reports/Create');
-    }
-
     public function store(Request $request)
     {
         $period = \App\Models\Period::firstOrCreate(
             ['month_year' => '01-2026'], 
             ['start_date' => '2026-01-01', 'end_date' => '2026-12-31']
         );
-        
         $report = ReportSubmission::firstOrCreate([
             'user_id' => Auth::id(),
             'period_id' => $period->id,
-        ], [
-            'form_type' => 'plan',
-            'approval_status' => 'Draft',
-        ]);
-        
+        ], ['form_type' => 'plan', 'approval_status' => 'Draft']);
         return redirect()->route('reports.show', $report->id)->with('success', 'Rencana Pekerjaan Baru Berhasil Disiapkan.');
     }
 
@@ -89,7 +78,6 @@ class ReportController extends Controller
     {
         $report = ReportSubmission::findOrFail($id);
         if (!Auth::user()->hasRole(['admin', 'super-admin']) && $report->user_id !== Auth::id()) abort(403);
-
         $report->update(['approval_status' => 'Pending_Manager']);
         return back()->with('success', 'Perencanaan diajukan ke Manajer (Tahap 1).');
     }
@@ -98,7 +86,6 @@ class ReportController extends Controller
     {
         $report = ReportSubmission::findOrFail($id);
         if (!Auth::user()->hasRole('admin') && $report->user_id !== Auth::id()) abort(403);
-
         $report->update(['approval_status' => 'Pending_Manager']);
         return back()->with('success', 'Pelaporan Kinerja diajukan ke Manajer (Tahap 1).');
     }
