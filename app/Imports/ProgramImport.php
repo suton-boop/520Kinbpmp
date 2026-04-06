@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Imports;
 
@@ -56,12 +56,15 @@ class ProgramImport implements ToCollection, WithStartRow
 
             if (empty($kegiatan)) continue;
 
-            // 1. Cari Gugus Mutu
+            // 1. Cari Gugus Mutu - PRIORITAS: Kolom di Excel dulu, baru dropdown
             $gm = null;
-            if ($this->gugusMutuId) {
-                $gm = GugusMutu::find($this->gugusMutuId);
-            } elseif (!empty($gm_name)) {
+            if (!empty($gm_name)) {
                 $gm = GugusMutu::where('name', 'like', '%' . $gm_name . '%')->first();
+            }
+
+            // Jika di Excel kosong atau tidak ditemukan, baru gunakan pilihan dari UI
+            if (!$gm && $this->gugusMutuId) {
+                $gm = GugusMutu::find($this->gugusMutuId);
             }
 
             // 2. Cari User (Operator/User) di Gugus Mutu tersebut
