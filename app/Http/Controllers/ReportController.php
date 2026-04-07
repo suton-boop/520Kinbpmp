@@ -15,8 +15,9 @@ class ReportController extends Controller
         
         $query = ReportSubmission::with(['period', 'activities', 'user.gugusMutu']);
 
-        if ($user->hasRole(['admin', 'super-admin'])) {
-            //
+        // Dukungan untuk superadmin (tanpa tanda hubung) dan super-admin (dengan tanda hubung)
+        if ($user->hasRole(['admin', 'super-admin', 'superadmin'])) {
+            // Admin melihat semua
         } elseif ($user->hasRole(['manager', 'staff', 'user'])) {
             if ($user->gugus_mutu_id) {
                 $query->whereHas('user', function($q) use ($user) {
@@ -28,11 +29,14 @@ class ReportController extends Controller
         }
 
         $reports = $query->orderBy('created_at', 'desc')->get();
+        
+        // Cek izin import untuk Gugus Mutu user
         $allowImport = false;
-        if ($user->gugus_mutu_id) {
-            $allowImport = (bool) \App\Models\GugusMutu::find($user->gugus_mutu_id)->allow_import;
-        } elseif ($user->hasRole(['admin', 'super-admin'])) {
+        if ($user->hasRole(['admin', 'super-admin', 'superadmin'])) {
             $allowImport = true;
+        } elseif ($user->gugus_mutu_id) {
+            $gm = \App\Models\GugusMutu::find($user->gugus_mutu_id);
+            $allowImport = $gm ? (bool)$gm->allow_import : false;
         }
                     
         return Inertia::render('Reports/Index', [
@@ -61,10 +65,11 @@ class ReportController extends Controller
         $report = ReportSubmission::with(['activities', 'period', 'user'])->findOrFail($id);
         
         $allowImport = false;
-        if ($user->gugus_mutu_id) {
-            $allowImport = (bool) \App\Models\GugusMutu::find($user->gugus_mutu_id)->allow_import;
-        } elseif ($user->hasRole(['admin', 'super-admin'])) {
+        if ($user->hasRole(['admin', 'super-admin', 'superadmin'])) {
             $allowImport = true;
+        } elseif ($user->gugus_mutu_id) {
+            $gm = \App\Models\GugusMutu::find($user->gugus_mutu_id);
+            $allowImport = $gm ? (bool)$gm->allow_import : false;
         }
 
         return Inertia::render('Reports/Show', [
@@ -77,7 +82,7 @@ class ReportController extends Controller
     public function submitPlan(Request $request, $id)
     {
         $report = ReportSubmission::findOrFail($id);
-        if (!Auth::user()->hasRole(['admin', 'super-admin']) && $report->user_id !== Auth::id()) abort(403);
+        if (!Auth::user()->hasRole(['admin', 'super-admin', 'superadmin']) && $report->user_id !== Auth::id()) abort(403);
         $report->update(['approval_status' => 'Pending_Manager']);
         return back()->with('success', 'Perencanaan diajukan ke Manajer (Tahap 1).');
     }
@@ -85,7 +90,7 @@ class ReportController extends Controller
     public function submitReport(Request $request, $id)
     {
         $report = ReportSubmission::findOrFail($id);
-        if (!Auth::user()->hasRole('admin') && $report->user_id !== Auth::id()) abort(403);
+        if (!Auth::user()->hasRole(['admin', 'super-admin', 'superadmin']) && $report->user_id !== Auth::id()) abort(403);
         $report->update(['approval_status' => 'Pending_Manager']);
         return back()->with('success', 'Pelaporan Kinerja diajukan ke Manajer (Tahap 1).');
     }

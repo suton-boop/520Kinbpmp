@@ -22,7 +22,8 @@ class ExcelImportController extends Controller
         $user = Auth::user();
         $gugusMutuId = $request->gugus_mutu_id;
 
-        if (!$user->hasRole(['admin', 'super-admin'])) {
+        // Support for 'superadmin' and 'super-admin'
+        if (!$user->hasRole(['admin', 'super-admin', 'superadmin'])) {
             $gugusMutuId = $user->gugus_mutu_id;
             
             if (!$gugusMutuId) {
