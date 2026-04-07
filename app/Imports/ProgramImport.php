@@ -46,10 +46,9 @@ class ProgramImport implements ToCollection, WithStartRow
             $peserta = $row[6] ?? '';
             $tempat = $row[7] ?? '';
             
-            // JALUR YANG BENAR (A=0, B=1, ... I=8, J=9, L=11)
-            $anggaran = $row[8] ?? ''; // Kolom I (Anggaran)
-            $bulan = $row[9] ?? '';    // Kolom J (Rencana Mulai)
-            $gm_name = trim($row[11] ?? ''); // Kolom L (Gugus Mutu)
+            $anggaran = $row[8] ?? ''; 
+            $bulan = $row[9] ?? '';    
+            $gm_name_raw = trim($row[11] ?? '');
 
             if (preg_match('/^[A-Z](\.)?$/i', $kode) || preg_match('/^[A-Z]\./i', $kode)) {
                 $this->currentProgram = $kegiatan;
@@ -65,9 +64,19 @@ class ProgramImport implements ToCollection, WithStartRow
 
             if (!$submission) {
                 $gm = null;
-                if (!empty($gm_name)) {
-                    $gm = GugusMutu::where('name', 'like', '%' . $gm_name . '%')->first();
+                if (!empty($gm_name_raw)) {
+                    $clean_gm_name = preg_replace('/[^A-Za-z0-9]/', '', $gm_name_raw);
+                    
+                    $allGMs = GugusMutu::all();
+                    foreach ($allGMs as $g) {
+                        $clean_db_name = preg_replace('/[^A-Za-z0-9]/', '', $g->name);
+                        if (stripos($clean_db_name, $clean_gm_name) !== false || stripos($clean_gm_name, $clean_db_name) !== false) {
+                            $gm = $g;
+                            break;
+                        }
+                    }
                 }
+
                 if (!$gm && $this->gugusMutuId) {
                     $gm = GugusMutu::find($this->gugusMutuId);
                 }
@@ -79,6 +88,7 @@ class ProgramImport implements ToCollection, WithStartRow
                     })->first();
                     $userId = $operator ? $operator->id : $gm->users()->first()?->id;
                 }
+                
                 if (!$userId) $userId = auth()->id();
 
                 $submission = ReportSubmission::firstOrCreate([
@@ -92,13 +102,12 @@ class ProgramImport implements ToCollection, WithStartRow
 
             if (!$submission) continue;
 
-            // GUNAKAN NAMA FIELD ASLI DATABASE
             Activity::create([
                 'report_submission_id' => $submission->id,
                 'kode_pmo' => $kode,
                 'nama_kegiatan_turunan' => $kegiatan,
                 'deskripsi_kegiatan' => $indikator,
-                'hasil_kegiatan' => $hasil, // Digunakan sebagai target_unit
+                'hasil_kegiatan' => $hasil, 
                 'mekanisme_kegiatan' => $mekanisme,
                 'peserta_sasaran' => $peserta,
                 'tempat_kegiatan' => $tempat,
