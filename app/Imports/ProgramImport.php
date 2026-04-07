@@ -43,34 +43,37 @@ class ProgramImport implements ToCollection, WithStartRow
             $mekanisme = $row[4] ?? '';
             $peserta = $row[6] ?? '';
             $tempat = $row[7] ?? '';
-            $anggaran = $row[8] ?? '';
-            $start = $row[9] ?? '';
+            
+            // Berdasarkan screenshot User:
+            // J (Index 9) = Anggaran
+            // K (Index 10) = Bulan (Start/End)
+            // L (Index 11) = Nama GM
+            $anggaran = $row[9] ?? ''; 
+            $start = $row[10] ?? '';
             $end = $row[10] ?? '';
             $gm_name = trim($row[11] ?? '');
 
-            // Deteksi Judul Program (A. , B. , dst)
-            if (preg_match('/^[A-Z]\./i', $kode)) {
+            // Deteksi Judul Program (A. , B. , dst atau hanya huruf A, B, C)
+            if (preg_match('/^[A-Z](\.)?$/i', $kode) || preg_match('/^[A-Z]\./i', $kode)) {
                 $this->currentProgram = $kegiatan;
                 continue;
             }
 
             if (empty($kegiatan)) continue;
 
-            // 1. Cari Gugus Mutu - PRIORITAS: Kolom di Excel dulu, baru dropdown
+            // 1. Cari Gugus Mutu
             $gm = null;
             if (!empty($gm_name)) {
                 $gm = GugusMutu::where('name', 'like', '%' . $gm_name . '%')->first();
             }
 
-            // Jika di Excel kosong atau tidak ditemukan, baru gunakan pilihan dari UI
             if (!$gm && $this->gugusMutuId) {
                 $gm = GugusMutu::find($this->gugusMutuId);
             }
 
-            // 2. Cari User (Operator/User) di Gugus Mutu tersebut
+            // 2. Cari User di Gugus Mutu tersebut
             $userId = null;
             if ($gm) {
-                // Cari user dengan role 'user' (Operator) di GM ini
                 $operator = $gm->users()->whereHas('roles', function($q) {
                     $q->whereIn('name', ['user', 'staff']);
                 })->first();
@@ -78,7 +81,6 @@ class ProgramImport implements ToCollection, WithStartRow
                 if ($operator) {
                     $userId = $operator->id;
                 } else {
-                    // Fallback ke manager jika operator tidak ada
                     $manager = $gm->users()->whereHas('roles', function($q) {
                         $q->where('name', 'manager');
                     })->first();
@@ -88,18 +90,17 @@ class ProgramImport implements ToCollection, WithStartRow
                 }
             }
 
-            // 3. Last Fallback jika GM tidak ditemukan atau tidak ada user
+            // 3. Fallback
             if (!$userId) {
                 $fallbackUser = User::whereHas('roles', function($q) {
                     $q->whereIn('name', ['user', 'staff']);
                 })->first();
-                $userId = $fallbackUser ? $fallbackUser->id : ($gm ? ($gm->users()->first() ? $gm->users()->first()->id : (User::first() ? User::first()->id : null)) : (User::first() ? User::first()->id : null));
+                $userId = $fallbackUser ? $fallbackUser->id : User::first()?->id;
             }
 
             if (!$userId) continue;
 
-            // 4. Pastikan ReportSubmission ada untuk User tersebut
-            // Kita anggap import admin ini membuat 'Rencana' yang sudah 'Approved' agar bisa diproses langsung
+            // 4. ReportSubmission
             $submission = ReportSubmission::firstOrCreate([
                 'user_id' => $userId,
                 'period_id' => $this->period->id,
@@ -133,10 +134,7 @@ class ProgramImport implements ToCollection, WithStartRow
         $map = [
             'januari' => '01', 'februari' => '02', 'maret' => '03', 'april' => '04',
             'mei' => '05', 'juni' => '06', 'juli' => '07', 'agustus' => '08',
-            'september' => '09', 'oktober' => '10', 'november' => '11', 'desember' => '12',
-            'jan' => '01', 'feb' => '02', 'mar' => '03', 'apr' => '04', 'may' => '05',
-            'jun' => '06', 'jul' => '07', 'aug' => '08', 'sep' => '09', 'oct' => '10',
-            'nov' => '11', 'dec' => '12'
+            'september' => '09', 'oktober' => '10', 'november' => '11', 'desember' => '12'
         ];
 
         $lower = strtolower($val);
@@ -145,6 +143,6 @@ class ProgramImport implements ToCollection, WithStartRow
                 return date('Y') . "-$num-01";
             }
         }
-        return null; // Fallback ke null jika format tidak dikenal
+        return null;
     }
 }
