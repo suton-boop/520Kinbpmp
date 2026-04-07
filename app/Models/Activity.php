@@ -55,27 +55,6 @@ class Activity extends Model
     public function getStartDateAttribute() { return $this->rencana_start_date; }
     public function getEndDateAttribute() { return $this->rencana_end_date; }
 
-    /**
-     * Virtual attributes for frontend mapping
-     */
-    protected $appends = [
-        'task_name',
-        'description',
-        'rkkl_code',
-        'target_count',
-        'target_unit',
-        'start_date',
-        'end_date'
-    ];
-
-    public function getTaskNameAttribute() { return $this->nama_kegiatan_turunan; }
-    public function getDescriptionAttribute() { return $this->deskripsi_kegiatan; }
-    public function getRkklCodeAttribute() { return $this->kode_rrkl; }
-    public function getTargetCountAttribute() { return $this->jumlah_target; }
-    public function getTargetUnitAttribute() { return $this->hasil_kegiatan ?: 'dokumen'; }
-    public function getStartDateAttribute() { return $this->rencana_start_date; }
-    public function getEndDateAttribute() { return $this->rencana_end_date; }
-
     public function reportSubmission()
     {
         return $this->belongsTo(ReportSubmission::class);
