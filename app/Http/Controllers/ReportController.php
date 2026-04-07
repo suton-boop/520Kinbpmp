@@ -16,7 +16,7 @@ class ReportController extends Controller
         $query = ReportSubmission::with(['period', 'activities', 'user.gugusMutu']);
 
         if ($user->hasRole(['admin', 'super-admin', 'superadmin'])) {
-            //
+            // Admin melihat semua
         } elseif ($user->hasRole(['manager', 'staff', 'user'])) {
             if ($user->gugus_mutu_id) {
                 $query->whereHas('user', function($q) use ($user) {
@@ -62,11 +62,13 @@ class ReportController extends Controller
         $user = Auth::user();
         $report = ReportSubmission::with(['activities', 'period', 'user'])->findOrFail($id);
         
-        // Authorization: Admin atau Pemilik atau Manager GM yang sama
-        if (!$user->hasRole(['admin', 'super-admin', 'superadmin']) && $report->user_id !== $user->id) {
-            if (!$user->hasRole('manager') || $report->user->gugus_mutu_id !== $user->gugus_mutu_id) {
-                abort(403);
-            }
+        // Authorization: Admin atau Pemilik atau Anggota di GM yang sama
+        $isAdmin = $user->hasRole(['admin', 'super-admin', 'superadmin']);
+        $isOwner = $report->user_id === $user->id;
+        $isSameGM = ($user->gugus_mutu_id && $report->user->gugus_mutu_id === $user->gugus_mutu_id);
+
+        if (!$isAdmin && !$isOwner && !$isSameGM) {
+            abort(403, 'Anda tidak memiliki akses ke laporan ini.');
         }
 
         $allowImport = false;
