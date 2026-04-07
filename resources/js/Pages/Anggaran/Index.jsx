@@ -259,7 +259,7 @@ export default function Index({ auth, anggaranData, isAdmin }) {
                                                         </div>
                                                     </td>
                                                     <td className="px-10 py-10 border-r border-gray-50 text-right font-black text-gray-500 text-sm">{formatRp(parent.anggaran_alokasi)}</td>
-                                                    <td className="px-10 py-10 border-r border-gray-50 text-right font-black text-sm tabular-nums underline decoration-2 underline-offset-4 ${parent.is_active ? 'text-blue-900 decoration-amber-400' : 'text-gray-400 decoration-gray-300'}">{formatRp(parent.anggaran_realisasi)}</td>
+                                                    <td className={`px-10 py-10 border-r border-gray-50 text-right font-black text-sm tabular-nums underline decoration-2 underline-offset-4 ${parent.is_active ? 'text-blue-900 decoration-amber-400' : 'text-gray-400 decoration-gray-300'}`}>{formatRp(parent.anggaran_realisasi)}</td>
                                                     <td className="px-10 py-10 border-r border-gray-50 text-center">
                                                         <div className={`px-4 py-2 rounded-xl font-black text-xs shadow-lg ${parent.is_active ? 'bg-blue-900 text-amber-400' : 'bg-gray-300 text-white'}`}>{Number(parent.anggaran_persen).toFixed(1)}%</div>
                                                     </td>
