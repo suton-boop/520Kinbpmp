@@ -17,6 +17,7 @@ class ProgramImport implements ToCollection, WithStartRow
     protected $period = null;
     protected $currentProgram;
     protected $gugusMutuId;
+    public $rowCount = 0;
 
     public function __construct($gugusMutuId = null)
     {
@@ -44,16 +45,12 @@ class ProgramImport implements ToCollection, WithStartRow
             $peserta = $row[6] ?? '';
             $tempat = $row[7] ?? '';
             
-            // Berdasarkan screenshot User:
-            // J (Index 9) = Anggaran
-            // K (Index 10) = Bulan (Start/End)
-            // L (Index 11) = Nama GM
+            // J (Index 9) = Anggaran, K (Index 10) = Bulan, L (Index 11) = GM
             $anggaran = $row[9] ?? ''; 
             $start = $row[10] ?? '';
             $end = $row[10] ?? '';
             $gm_name = trim($row[11] ?? '');
 
-            // Deteksi Judul Program (A. , B. , dst atau hanya huruf A, B, C)
             if (preg_match('/^[A-Z](\.)?$/i', $kode) || preg_match('/^[A-Z]\./i', $kode)) {
                 $this->currentProgram = $kegiatan;
                 continue;
@@ -61,7 +58,6 @@ class ProgramImport implements ToCollection, WithStartRow
 
             if (empty($kegiatan)) continue;
 
-            // 1. Cari Gugus Mutu
             $gm = null;
             if (!empty($gm_name)) {
                 $gm = GugusMutu::where('name', 'like', '%' . $gm_name . '%')->first();
@@ -71,7 +67,6 @@ class ProgramImport implements ToCollection, WithStartRow
                 $gm = GugusMutu::find($this->gugusMutuId);
             }
 
-            // 2. Cari User di Gugus Mutu tersebut
             $userId = null;
             if ($gm) {
                 $operator = $gm->users()->whereHas('roles', function($q) {
@@ -90,7 +85,6 @@ class ProgramImport implements ToCollection, WithStartRow
                 }
             }
 
-            // 3. Fallback
             if (!$userId) {
                 $fallbackUser = User::whereHas('roles', function($q) {
                     $q->whereIn('name', ['user', 'staff']);
@@ -100,7 +94,6 @@ class ProgramImport implements ToCollection, WithStartRow
 
             if (!$userId) continue;
 
-            // 4. ReportSubmission
             $submission = ReportSubmission::firstOrCreate([
                 'user_id' => $userId,
                 'period_id' => $this->period->id,
@@ -109,7 +102,6 @@ class ProgramImport implements ToCollection, WithStartRow
                 'approval_status' => 'Approved',
             ]);
 
-            // 5. Buat Activity
             Activity::create([
                 'report_submission_id' => $submission->id,
                 'kode_pmo' => $kode,
@@ -125,6 +117,8 @@ class ProgramImport implements ToCollection, WithStartRow
                 'nama_kegiatan_di_dipa' => $this->currentProgram,
                 'status_akhir' => 'Belum',
             ]);
+            
+            $this->rowCount++;
         }
     }
 

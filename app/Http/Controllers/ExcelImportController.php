@@ -22,7 +22,6 @@ class ExcelImportController extends Controller
         $user = Auth::user();
         $gugusMutuId = $request->gugus_mutu_id;
 
-        // Support for 'superadmin' and 'super-admin'
         if (!$user->hasRole(['admin', 'super-admin', 'superadmin'])) {
             $gugusMutuId = $user->gugus_mutu_id;
             
@@ -37,10 +36,16 @@ class ExcelImportController extends Controller
         }
 
         try {
-            Excel::import(new ProgramImport($gugusMutuId), $request->file('file'));
-            return redirect()->back()->with('success', 'Data Program berhasil diimport.');
+            $import = new ProgramImport($gugusMutuId);
+            Excel::import($import, $request->file('file'));
+            
+            if ($import->rowCount > 0) {
+                return redirect()->back()->with('success', "BERHASIL! {$import->rowCount} DATA KEGIATAN TELAH DIIMPORT.");
+            } else {
+                return redirect()->back()->with('error', 'TIDAK ADA DATA YANG DIIMPORT. PERIKSA APAKAH FORMAT EXCEL SUDAH SESUAI TABEL.');
+            }
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'TERJADI KESALAHAN: ' . $e->getMessage());
         }
     }
 
