@@ -43,19 +43,45 @@ class ProgramImport implements ToCollection, WithStartRow
             $indikator = $row[2] ?? '';
             $hasil = $row[3] ?? '';
             $mekanisme = $row[4] ?? '';
-            $peserta = $row[6] ?? '';
-            $tempat = $row[7] ?? '';
             
-            $anggaran = $row[8] ?? ''; 
-            $bulan = $row[9] ?? '';    
-            $gm_name_raw = trim($row[11] ?? '');
-
+            // JIKA BARIS JUDUL PROGRAM (A. atau D. atau E)
             if (preg_match('/^[A-Z](\.)?$/i', $kode) || preg_match('/^[A-Z]\./i', $kode)) {
                 $this->currentProgram = $kegiatan;
                 continue;
             }
 
             if (empty($kegiatan)) continue;
+
+            // LOGIKA PEMINDAI OTOMATIS (Handle kolom bergeser)
+            $anggaran = null;
+            $bulan = null;
+            $gm_name_raw = null;
+
+            // Scan kolom 7 sampai 13 (G sampai M) untuk mencari data yang bergeser
+            for ($i = 7; $i <= 13; $i++) {
+                $val = trim($row[$i] ?? '');
+                if (empty($val)) continue;
+
+                // 1. Deteksi Anggaran (Ciri: Angka murni > 1000)
+                if (is_numeric($val) && (float)$val > 1000 && $anggaran === null) {
+                    $anggaran = $val;
+                }
+
+                // 2. Deteksi Bulan (Ciri: Mengandung nama bulan)
+                if ($this->detectMonth($val) && $bulan === null) {
+                    $bulan = $val;
+                }
+
+                // 3. Deteksi Gugus Mutu (Ciri: Mengandung kata 'GM')
+                if (stripos($val, 'GM') !== false && $gm_name_raw === null) {
+                    $gm_name_raw = $val;
+                }
+            }
+
+            // Fallback jika scannner gagal (kembali ke index standar)
+            if (!$anggaran) $anggaran = $row[8] ?? $row[9] ?? '';
+            if (!$bulan) $bulan = $row[9] ?? $row[10] ?? '';
+            if (!$gm_name_raw) $gm_name_raw = $row[11] ?? '';
 
             $submission = null;
             if ($this->reportId) {
@@ -66,7 +92,6 @@ class ProgramImport implements ToCollection, WithStartRow
                 $gm = null;
                 if (!empty($gm_name_raw)) {
                     $clean_gm_name = preg_replace('/[^A-Za-z0-9]/', '', $gm_name_raw);
-                    
                     $allGMs = GugusMutu::all();
                     foreach ($allGMs as $g) {
                         $clean_db_name = preg_replace('/[^A-Za-z0-9]/', '', $g->name);
@@ -76,10 +101,7 @@ class ProgramImport implements ToCollection, WithStartRow
                         }
                     }
                 }
-
-                if (!$gm && $this->gugusMutuId) {
-                    $gm = GugusMutu::find($this->gugusMutuId);
-                }
+                if (!$gm && $this->gugusMutuId) $gm = GugusMutu::find($this->gugusMutuId);
                 
                 $userId = null;
                 if ($gm) {
@@ -88,7 +110,6 @@ class ProgramImport implements ToCollection, WithStartRow
                     })->first();
                     $userId = $operator ? $operator->id : $gm->users()->first()?->id;
                 }
-                
                 if (!$userId) $userId = auth()->id();
 
                 $submission = ReportSubmission::firstOrCreate([
@@ -109,8 +130,8 @@ class ProgramImport implements ToCollection, WithStartRow
                 'deskripsi_kegiatan' => $indikator,
                 'hasil_kegiatan' => $hasil, 
                 'mekanisme_kegiatan' => $mekanisme,
-                'peserta_sasaran' => $peserta,
-                'tempat_kegiatan' => $tempat,
+                'peserta_sasaran' => $row[6] ?? '', // Peserta biasanya di G
+                'tempat_kegiatan' => $row[7] ?? '', // Tempat biasanya di H
                 'jumlah_target' => 1,
                 'kode_rrkl' => $anggaran,
                 'rencana_start_date' => $this->parseDate($bulan),
@@ -121,6 +142,16 @@ class ProgramImport implements ToCollection, WithStartRow
             
             $this->rowCount++;
         }
+    }
+
+    private function detectMonth($val)
+    {
+        $months = ['januari', 'februari', 'maret', 'april', 'mei', 'juni', 'juli', 'agustus', 'september', 'oktober', 'november', 'desember'];
+        $lower = strtolower($val);
+        foreach ($months as $m) {
+            if (str_contains($lower, $m)) return true;
+        }
+        return false;
     }
 
     private function parseDate($val)
