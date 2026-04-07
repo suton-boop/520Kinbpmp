@@ -15,9 +15,8 @@ class ReportController extends Controller
         
         $query = ReportSubmission::with(['period', 'activities', 'user.gugusMutu']);
 
-        // Dukungan untuk superadmin (tanpa tanda hubung) dan super-admin (dengan tanda hubung)
         if ($user->hasRole(['admin', 'super-admin', 'superadmin'])) {
-            // Admin melihat semua
+            //
         } elseif ($user->hasRole(['manager', 'staff', 'user'])) {
             if ($user->gugus_mutu_id) {
                 $query->whereHas('user', function($q) use ($user) {
@@ -30,7 +29,6 @@ class ReportController extends Controller
 
         $reports = $query->orderBy('created_at', 'desc')->get();
         
-        // Cek izin import untuk Gugus Mutu user
         $allowImport = false;
         if ($user->hasRole(['admin', 'super-admin', 'superadmin'])) {
             $allowImport = true;
@@ -64,6 +62,13 @@ class ReportController extends Controller
         $user = Auth::user();
         $report = ReportSubmission::with(['activities', 'period', 'user'])->findOrFail($id);
         
+        // Authorization: Admin atau Pemilik atau Manager GM yang sama
+        if (!$user->hasRole(['admin', 'super-admin', 'superadmin']) && $report->user_id !== $user->id) {
+            if (!$user->hasRole('manager') || $report->user->gugus_mutu_id !== $user->gugus_mutu_id) {
+                abort(403);
+            }
+        }
+
         $allowImport = false;
         if ($user->hasRole(['admin', 'super-admin', 'superadmin'])) {
             $allowImport = true;
@@ -81,16 +86,35 @@ class ReportController extends Controller
 
     public function submitPlan(Request $request, $id)
     {
+        $user = Auth::user();
         $report = ReportSubmission::findOrFail($id);
-        if (!Auth::user()->hasRole(['admin', 'super-admin', 'superadmin']) && $report->user_id !== Auth::id()) abort(403);
+        
+        // Authorization check
+        $isOwner = $report->user_id === $user->id;
+        $isAdmin = $user->hasRole(['admin', 'super-admin', 'superadmin']);
+        $isManagerOfGM = $user->hasRole('manager') && $report->user->gugus_mutu_id === $user->gugus_mutu_id;
+
+        if (!$isOwner && !$isAdmin && !$isManagerOfGM) {
+            abort(403);
+        }
+
         $report->update(['approval_status' => 'Pending_Manager']);
         return back()->with('success', 'Perencanaan diajukan ke Manajer (Tahap 1).');
     }
 
     public function submitReport(Request $request, $id)
     {
+        $user = Auth::user();
         $report = ReportSubmission::findOrFail($id);
-        if (!Auth::user()->hasRole(['admin', 'super-admin', 'superadmin']) && $report->user_id !== Auth::id()) abort(403);
+        
+        $isOwner = $report->user_id === $user->id;
+        $isAdmin = $user->hasRole(['admin', 'super-admin', 'superadmin']);
+        $isManagerOfGM = $user->hasRole('manager') && $report->user->gugus_mutu_id === $user->gugus_mutu_id;
+
+        if (!$isOwner && !$isAdmin && !$isManagerOfGM) {
+            abort(403);
+        }
+
         $report->update(['approval_status' => 'Pending_Manager']);
         return back()->with('success', 'Pelaporan Kinerja diajukan ke Manajer (Tahap 1).');
     }
