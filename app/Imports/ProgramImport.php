@@ -46,10 +46,10 @@ class ProgramImport implements ToCollection, WithStartRow
             $peserta = $row[6] ?? '';
             $tempat = $row[7] ?? '';
             
-            $anggaran = $row[9] ?? ''; 
-            $start = $row[10] ?? '';
-            $end = $row[10] ?? '';
-            $gm_name = trim($row[11] ?? '');
+            // JALUR YANG BENAR (A=0, B=1, ... I=8, J=9, L=11)
+            $anggaran = $row[8] ?? ''; // Kolom I (Anggaran)
+            $bulan = $row[9] ?? '';    // Kolom J (Rencana Mulai)
+            $gm_name = trim($row[11] ?? ''); // Kolom L (Gugus Mutu)
 
             if (preg_match('/^[A-Z](\.)?$/i', $kode) || preg_match('/^[A-Z]\./i', $kode)) {
                 $this->currentProgram = $kegiatan;
@@ -64,7 +64,6 @@ class ProgramImport implements ToCollection, WithStartRow
             }
 
             if (!$submission) {
-                // Logika pencarian user seperti sebelumnya jika report_id tidak disediakan
                 $gm = null;
                 if (!empty($gm_name)) {
                     $gm = GugusMutu::where('name', 'like', '%' . $gm_name . '%')->first();
@@ -93,21 +92,22 @@ class ProgramImport implements ToCollection, WithStartRow
 
             if (!$submission) continue;
 
+            // GUNAKAN NAMA FIELD ASLI DATABASE
             Activity::create([
                 'report_submission_id' => $submission->id,
                 'kode_pmo' => $kode,
                 'nama_kegiatan_turunan' => $kegiatan,
                 'deskripsi_kegiatan' => $indikator,
-                'hasil_kegiatan' => $hasil,
+                'hasil_kegiatan' => $hasil, // Digunakan sebagai target_unit
                 'mekanisme_kegiatan' => $mekanisme,
                 'peserta_sasaran' => $peserta,
                 'tempat_kegiatan' => $tempat,
-                'rincian_ketersediaan_anggaran' => $anggaran,
-                'rencana_start_date' => $this->parseDate($start),
-                'rencana_end_date' => $this->parseDate($end),
+                'jumlah_target' => 1,
+                'kode_rrkl' => $anggaran,
+                'rencana_start_date' => $this->parseDate($bulan),
+                'rencana_end_date' => $this->parseDate($bulan),
                 'nama_kegiatan_di_dipa' => $this->currentProgram,
                 'status_akhir' => 'Belum',
-                'id_kegiatan' => rand(1000, 9999), // Fallback jika DB butuh ID unik
             ]);
             
             $this->rowCount++;
