@@ -72,7 +72,7 @@ class ProgramImport implements ToCollection, WithStartRow
             if ($gm) {
                 // Cari user dengan role 'user' (Operator) di GM ini
                 $operator = $gm->users()->whereHas('roles', function($q) {
-                    $q->where('name', 'user');
+                    $q->whereIn('name', ['user', 'staff']);
                 })->first();
                 
                 if ($operator) {
@@ -91,7 +91,7 @@ class ProgramImport implements ToCollection, WithStartRow
             // 3. Last Fallback jika GM tidak ditemukan atau tidak ada user
             if (!$userId) {
                 $fallbackUser = User::whereHas('roles', function($q) {
-                    $q->where('name', 'user');
+                    $q->whereIn('name', ['user', 'staff']);
                 })->first();
                 $userId = $fallbackUser ? $fallbackUser->id : ($gm ? ($gm->users()->first() ? $gm->users()->first()->id : (User::first() ? User::first()->id : null)) : (User::first() ? User::first()->id : null));
             }
