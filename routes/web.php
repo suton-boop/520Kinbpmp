@@ -42,6 +42,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Global components shared across roles
     Route::get('/users/export-template', [ExcelImportController::class, 'downloadTemplate'])->name('import.template');
     Route::post('/import-program', [ExcelImportController::class, 'importProgram'])->name('import.program');
+    Route::post('/import-debug', [\App\Http\Controllers\DebugImportController::class, 'debug'])->name('import.debug');
 
     Route::middleware(['role:superadmin|admin'])->group(function () {
         Route::resource('users', \App\Http\Controllers\UserController::class);

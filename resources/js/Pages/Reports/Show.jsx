@@ -10,6 +10,7 @@ import {
   ChevronDoubleLeftIcon,
   CloudArrowUpIcon,
   DocumentArrowDownIcon,
+  BugAntIcon,
 } from "@heroicons/react/24/solid";
 
 export default function Show({ auth, report, userRole, allowImport }) {
@@ -41,7 +42,7 @@ export default function Show({ auth, report, userRole, allowImport }) {
       reset: resetImport,
   } = useForm({
       file: null,
-      report_id: report.id, // Set the report ID
+      report_id: report.id,
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -105,6 +106,28 @@ export default function Show({ auth, report, userRole, allowImport }) {
     postImport(route("import.program"), {
        onSuccess: () => resetImport(),
     });
+  };
+
+  const handleDebug = (e) => {
+    e.preventDefault();
+    if (!importData.file) { alert("Pilih file dulu."); return; }
+    
+    // Create form manually for debug (not inertia for this one)
+    const formData = new FormData();
+    formData.append('file', importData.file);
+    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+    
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = route('import.debug');
+    form.enctype = 'multipart/form-data';
+    
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.name = 'file';
+    // This is hard to do with JS file objects, so we just use a regular submit if possible?
+    // Actually, simpler: Use router.post but without Inertia response handling?
+    postImport(route('import.debug'));
   };
 
   return (
@@ -182,7 +205,9 @@ export default function Show({ auth, report, userRole, allowImport }) {
                           <div>
                                <h4 className="text-lg font-black text-blue-900 uppercase italic tracking-tighter">Import Program Cepat</h4>
                                <p className="text-[10px] font-bold text-gray-400 uppercase mt-1">Gunakan file Excel untuk mengisi banyak kegiatan sekaligus.</p>
-                               <a href="/users/export-template" className="text-[9px] font-black text-blue-700 uppercase mt-2 block hover:underline">Unduh Template Excel</a>
+                               <div className="flex gap-4 mt-2">
+                                <a href="/users/export-template" className="text-[9px] font-black text-blue-700 uppercase hover:underline">Unduh Template</a>
+                               </div>
                           </div>
                      </div>
                      <form onSubmit={handleImport} className="flex-1 max-w-xl flex items-center gap-2">
@@ -192,13 +217,29 @@ export default function Show({ auth, report, userRole, allowImport }) {
                             className="flex-1 bg-white border border-gray-100 h-12 rounded-xl px-4 text-[10px] items-center flex"
                             required
                           />
-                          <button 
-                            type="submit" 
-                            disabled={importProcessing}
-                            className="bg-blue-900 text-white px-8 h-12 rounded-xl font-black text-[10px] uppercase shadow-lg hover:bg-blue-950 disabled:opacity-50"
-                          >
-                             {importProcessing ? 'LOADING...' : 'IMPORT'}
-                          </button>
+                          <div className="flex flex-col gap-1">
+                            <button 
+                                type="submit" 
+                                disabled={importProcessing}
+                                className="bg-blue-900 text-white px-8 h-10 rounded-xl font-black text-[10px] uppercase shadow-lg hover:bg-blue-950 disabled:opacity-50"
+                            >
+                                {importProcessing ? 'PROSES...' : 'IMPORT'}
+                            </button>
+                            <button 
+                                type="button" 
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    if(!importData.file) { alert('Pilih file dulu'); return; }
+                                    router.post(route('import.debug'), { file: importData.file }, {
+                                        forceFormData: true,
+                                        onFinish: () => {},
+                                    });
+                                }}
+                                className="bg-gray-100 text-gray-500 px-8 h-6 rounded-lg font-black text-[8px] uppercase hover:bg-gray-200 transition-all flex items-center justify-center gap-1"
+                            >
+                                <BugAntIcon className="w-2.5 h-2.5" /> LIHAT DEBUG
+                            </button>
+                          </div>
                      </form>
                 </div>
             </div>
