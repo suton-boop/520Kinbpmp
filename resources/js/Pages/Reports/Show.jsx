@@ -13,7 +13,7 @@ import {
   BugAntIcon,
 } from "@heroicons/react/24/solid";
 
-export default function Show({ auth, report, userRole, allowImport }) {
+export default function Show({ auth, report, userRole, allowImport, canEdit }) {
   const {
     data,
     setData,
@@ -48,13 +48,8 @@ export default function Show({ auth, report, userRole, allowImport }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
 
-  const isEditable =
-    userRole === "admin" ||
-    userRole === "super-admin" ||
-    userRole === "superadmin" ||
-    ((userRole === "staff" || userRole === "manager") &&
-      (report.approval_status === "Draft" ||
-        report.approval_status.includes("Rejected")));
+  // canEdit sekarang datang langsung dari BACKEND (Controller)
+  const isEditable = canEdit;
 
   const openModal = (activity = null) => {
     if (activity) {
@@ -106,28 +101,6 @@ export default function Show({ auth, report, userRole, allowImport }) {
     postImport(route("import.program"), {
        onSuccess: () => resetImport(),
     });
-  };
-
-  const handleDebug = (e) => {
-    e.preventDefault();
-    if (!importData.file) { alert("Pilih file dulu."); return; }
-    
-    // Create form manually for debug (not inertia for this one)
-    const formData = new FormData();
-    formData.append('file', importData.file);
-    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
-    
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = route('import.debug');
-    form.enctype = 'multipart/form-data';
-    
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.name = 'file';
-    // This is hard to do with JS file objects, so we just use a regular submit if possible?
-    // Actually, simpler: Use router.post but without Inertia response handling?
-    postImport(route('import.debug'));
   };
 
   return (
@@ -280,25 +253,25 @@ export default function Show({ auth, report, userRole, allowImport }) {
                       >
                         <td className="px-6 py-6 border-r border-gray-50">
                           <span className="text-[10px] font-black text-blue-900/40 uppercase">
-                            {activity.rkkl_code || "-"}
+                            {activity.rkkl_code || activity.kode_rrkl || "-"}
                           </span>
                         </td>
                         <td className="px-6 py-6 border-r border-gray-50 min-w-[250px]">
                           <p className="font-black text-blue-900 text-[13px] uppercase tracking-tighter leading-tight italic">
-                            {activity.task_name}
+                            {activity.task_name || activity.nama_kegiatan_turunan}
                           </p>
                         </td>
                         <td className="px-6 py-6 border-r border-gray-50 max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">
                           <p className="text-[11px] text-gray-500 italic">
-                            {activity.description || "N/A"}
+                            {activity.description || activity.deskripsi_kegiatan || "N/A"}
                           </p>
                         </td>
                         <td className="px-6 py-6 text-center border-r border-gray-50">
                           <p className="text-sm font-black text-blue-900">
-                            {activity.target_count}
+                            {activity.target_count || activity.jumlah_target}
                           </p>
                           <p className="text-[9px] font-bold text-gray-400 uppercase italic">
-                            {activity.target_unit}
+                            {activity.target_unit || activity.hasil_kegiatan}
                           </p>
                         </td>
                         <td className="px-6 py-6 border-r border-gray-50">

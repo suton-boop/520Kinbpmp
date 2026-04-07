@@ -12,12 +12,11 @@ class ReportController extends Controller
     public function index()
     {
         $user = Auth::user();
-        
         $query = ReportSubmission::with(['period', 'activities', 'user.gugusMutu']);
 
         if ($user->hasRole(['admin', 'super-admin', 'superadmin'])) {
             // Admin melihat semua
-        } elseif ($user->hasRole(['manager', 'staff', 'user'])) {
+        } elseif ($user->hasAnyRole(['manager', 'staff', 'user', 'operator'])) {
             if ($user->gugus_mutu_id) {
                 $query->whereHas('user', function($q) use ($user) {
                     $q->where('gugus_mutu_id', $user->gugus_mutu_id);
@@ -62,7 +61,6 @@ class ReportController extends Controller
         $user = Auth::user();
         $report = ReportSubmission::with(['activities', 'period', 'user'])->findOrFail($id);
         
-        // Authorization: Admin atau Pemilik atau Anggota di GM yang sama
         $isAdmin = $user->hasRole(['admin', 'super-admin', 'superadmin']);
         $isOwner = $report->user_id === $user->id;
         $isSameGM = ($user->gugus_mutu_id && $report->user->gugus_mutu_id === $user->gugus_mutu_id);
@@ -71,8 +69,14 @@ class ReportController extends Controller
             abort(403, 'Anda tidak memiliki akses ke laporan ini.');
         }
 
+        // HITUNG IZIN EDIT DI SINI (SERVER-SIDE)
+        $canEdit = $isAdmin || (
+            ($isOwner || $isSameGM) && 
+            ($report->approval_status === 'Draft' || str_contains($report->approval_status, 'Rejected'))
+        );
+
         $allowImport = false;
-        if ($user->hasRole(['admin', 'super-admin', 'superadmin'])) {
+        if ($isAdmin) {
             $allowImport = true;
         } elseif ($user->gugus_mutu_id) {
             $gm = \App\Models\GugusMutu::find($user->gugus_mutu_id);
@@ -83,6 +87,7 @@ class ReportController extends Controller
             'report' => $report,
             'userRole' => $user->roles->pluck('name')->first(),
             'allowImport' => $allowImport,
+            'canEdit' => $canEdit, // Kirim flag ini ke UI
         ]);
     }
 
@@ -91,7 +96,6 @@ class ReportController extends Controller
         $user = Auth::user();
         $report = ReportSubmission::findOrFail($id);
         
-        // Authorization check
         $isOwner = $report->user_id === $user->id;
         $isAdmin = $user->hasRole(['admin', 'super-admin', 'superadmin']);
         $isManagerOfGM = $user->hasRole('manager') && $report->user->gugus_mutu_id === $user->gugus_mutu_id;
