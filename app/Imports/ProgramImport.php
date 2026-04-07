@@ -17,11 +17,13 @@ class ProgramImport implements ToCollection, WithStartRow
     protected $period = null;
     protected $currentProgram;
     protected $gugusMutuId;
+    protected $reportId;
     public $rowCount = 0;
 
-    public function __construct($gugusMutuId = null)
+    public function __construct($gugusMutuId = null, $reportId = null)
     {
         $this->gugusMutuId = $gugusMutuId;
+        $this->reportId = $reportId;
         $this->period = Period::firstOrCreate(
             ['month_year' => '01-2026'],
             ['start_date' => '2026-01-01', 'end_date' => '2026-12-31']
@@ -44,7 +46,6 @@ class ProgramImport implements ToCollection, WithStartRow
             $peserta = $row[6] ?? '';
             $tempat = $row[7] ?? '';
             
-            // J (Index 9) = Anggaran, K (Index 10) = Bulan, L (Index 11) = GM
             $anggaran = $row[9] ?? ''; 
             $start = $row[10] ?? '';
             $end = $row[10] ?? '';
@@ -57,66 +58,41 @@ class ProgramImport implements ToCollection, WithStartRow
 
             if (empty($kegiatan)) continue;
 
-            // 1. Cari Gugus Mutu
-            $gm = null;
-            if (!empty($gm_name)) {
-                $gm = GugusMutu::where('name', 'like', '%' . $gm_name . '%')->first();
+            $submission = null;
+            if ($this->reportId) {
+                $submission = ReportSubmission::find($this->reportId);
             }
 
-            if (!$gm && $this->gugusMutuId) {
-                $gm = GugusMutu::find($this->gugusMutuId);
-            }
-
-            // Jika GM tidak ketemu, skip baris ini
-            if (!$gm) {
-                Log::warning("Import Skip: Gugus Mutu tidak ditemukan untuk nama: $gm_name");
-                continue;
-            }
-
-            // 2. Cari User yang akan menampung data (Utamakan Operator, lalu Admin GM/Manager)
-            $userId = null;
-            
-            // Cari operator (staff/user)
-            $operator = $gm->users()->whereHas('roles', function($q) {
-                $q->whereIn('name', ['user', 'staff']);
-            })->first();
-            
-            if ($operator) {
-                $userId = $operator->id;
-            } else {
-                // Jika tidak ada operator, cari Manager (Admin GM)
-                $manager = $gm->users()->whereHas('roles', function($q) {
-                    $q->whereIn('name', ['manager', 'admin']);
-                })->first();
-                if ($manager) {
-                    $userId = $manager->id;
-                } else {
-                    // Terakhir, ambil user pertama yang ada di GM tersebut
-                    $anyUser = $gm->users()->first();
-                    $userId = $anyUser ? $anyUser->id : null;
+            if (!$submission) {
+                // Logika pencarian user seperti sebelumnya jika report_id tidak disediakan
+                $gm = null;
+                if (!empty($gm_name)) {
+                    $gm = GugusMutu::where('name', 'like', '%' . $gm_name . '%')->first();
                 }
+                if (!$gm && $this->gugusMutuId) {
+                    $gm = GugusMutu::find($this->gugusMutuId);
+                }
+                
+                $userId = null;
+                if ($gm) {
+                    $operator = $gm->users()->whereHas('roles', function($q) {
+                        $q->whereIn('name', ['user', 'staff']);
+                    })->first();
+                    $userId = $operator ? $operator->id : $gm->users()->first()?->id;
+                }
+                if (!$userId) $userId = auth()->id();
+
+                $submission = ReportSubmission::firstOrCreate([
+                    'user_id' => $userId,
+                    'period_id' => $this->period->id,
+                    'form_type' => 'plan',
+                ], [
+                    'approval_status' => 'Draft',
+                ]);
             }
 
-            // Fallback terakhir ke user yang sedang login jika benar-benar buntu
-            if (!$userId) {
-                $userId = auth()->id();
-            }
+            if (!$submission) continue;
 
-            if (!$userId) {
-                Log::error("Import Gagal: Tidak ada user target untuk GM: " . $gm->name);
-                continue;
-            }
-
-            // 3. Buat/Ambil ReportSubmission (Pastikan form_type seragam: plan)
-            $submission = ReportSubmission::firstOrCreate([
-                'user_id' => $userId,
-                'period_id' => $this->period->id,
-                'form_type' => 'plan', // Disamakan dengan sistem (sebelumnya 'Rencana')
-            ], [
-                'approval_status' => 'Draft', // Gunakan Draft agar bisa diedit dulu
-            ]);
-
-            // 4. Activity
             Activity::create([
                 'report_submission_id' => $submission->id,
                 'kode_pmo' => $kode,
@@ -131,6 +107,7 @@ class ProgramImport implements ToCollection, WithStartRow
                 'rencana_end_date' => $this->parseDate($end),
                 'nama_kegiatan_di_dipa' => $this->currentProgram,
                 'status_akhir' => 'Belum',
+                'id_kegiatan' => rand(1000, 9999), // Fallback jika DB butuh ID unik
             ]);
             
             $this->rowCount++;
@@ -145,12 +122,9 @@ class ProgramImport implements ToCollection, WithStartRow
             'mei' => '05', 'juni' => '06', 'juli' => '07', 'agustus' => '08',
             'september' => '09', 'oktober' => '10', 'november' => '11', 'desember' => '12'
         ];
-
         $lower = strtolower($val);
         foreach ($map as $m => $num) {
-            if (str_contains($lower, $m)) {
-                return date('Y') . "-$num-01";
-            }
+            if (str_contains($lower, $m)) return date('Y') . "-$num-01";
         }
         return null;
     }

@@ -17,10 +17,12 @@ class ExcelImportController extends Controller
         $request->validate([
             'file' => 'required|mimes:xlsx,xls,csv|max:2048',
             'gugus_mutu_id' => 'nullable|exists:gugus_mutus,id',
+            'report_id' => 'nullable|exists:report_submissions,id',
         ]);
 
         $user = Auth::user();
         $gugusMutuId = $request->gugus_mutu_id;
+        $reportId = $request->report_id;
 
         if (!$user->hasRole(['admin', 'super-admin', 'superadmin'])) {
             $gugusMutuId = $user->gugus_mutu_id;
@@ -36,7 +38,7 @@ class ExcelImportController extends Controller
         }
 
         try {
-            $import = new ProgramImport($gugusMutuId);
+            $import = new ProgramImport($gugusMutuId, $reportId);
             Excel::import($import, $request->file('file'));
             
             if ($import->rowCount > 0) {

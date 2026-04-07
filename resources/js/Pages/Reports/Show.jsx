@@ -1,4 +1,4 @@
-﻿import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, useForm, usePage, router, Link } from "@inertiajs/react";
 import { useState, useMemo } from "react";
 import {
@@ -30,7 +30,7 @@ export default function Show({ auth, report, userRole, allowImport }) {
     start_date: "",
     end_date: "",
     rkkl_code: "",
-    id: null, // For editing
+    id: null,
   });
 
   const {
@@ -41,6 +41,7 @@ export default function Show({ auth, report, userRole, allowImport }) {
       reset: resetImport,
   } = useForm({
       file: null,
+      report_id: report.id, // Set the report ID
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -49,6 +50,7 @@ export default function Show({ auth, report, userRole, allowImport }) {
   const isEditable =
     userRole === "admin" ||
     userRole === "super-admin" ||
+    userRole === "superadmin" ||
     ((userRole === "staff" || userRole === "manager") &&
       (report.approval_status === "Draft" ||
         report.approval_status.includes("Rejected")));
@@ -151,7 +153,7 @@ export default function Show({ auth, report, userRole, allowImport }) {
               </div>
               <div className="flex items-center gap-4">
                 <Link
-                  href={route("dashboard")}
+                  href={route("reports.index")}
                   className="p-4 bg-white text-blue-900 border border-gray-100 rounded-2xl hover:bg-gray-50 transition shadow-sm"
                 >
                   <ChevronDoubleLeftIcon className="w-5 h-5" />
@@ -162,7 +164,7 @@ export default function Show({ auth, report, userRole, allowImport }) {
                     className="inline-flex items-center px-10 py-4 bg-blue-900 border border-transparent rounded-[20px] font-black text-xs text-white uppercase tracking-widest hover:bg-blue-950 transition shadow-2xl"
                   >
                     <PlusIcon className="w-5 h-5 mr-3 text-amber-400" /> Tambah
-                    Baris Baru
+                    Data Baru
                   </button>
                 )}
               </div>
@@ -260,10 +262,10 @@ export default function Show({ auth, report, userRole, allowImport }) {
                         </td>
                         <td className="px-6 py-6 border-r border-gray-50">
                           <div className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase italic">
-                            <span>{activity.start_date}</span>
+                            <span>{activity.start_date || activity.rencana_start_date}</span>
                             <span>→</span>
                             <span className="text-blue-900 underline decoration-amber-400">
-                              {activity.end_date}
+                              {activity.end_date || activity.rencana_end_date}
                             </span>
                           </div>
                         </td>
@@ -323,11 +325,6 @@ export default function Show({ auth, report, userRole, allowImport }) {
                       onChange={(e) => setData("task_name", e.target.value)}
                       required
                     />
-                    {errors.task_name && (
-                      <p className="text-red-500 text-xs mt-1">
-                        {errors.task_name}
-                      </p>
-                    )}
                   </div>
 
                   <div className="md:col-span-2">
@@ -388,7 +385,6 @@ export default function Show({ auth, report, userRole, allowImport }) {
                       className="w-full h-16 bg-gray-50 border-gray-100 rounded-2xl text-sm font-black text-blue-900 focus:ring-amber-400 focus:border-amber-400 shadow-inner px-6"
                       value={data.start_date}
                       onChange={(e) => setData("start_date", e.target.value)}
-                      required
                     />
                   </div>
 
@@ -401,7 +397,6 @@ export default function Show({ auth, report, userRole, allowImport }) {
                       className="w-full h-16 bg-gray-50 border-gray-100 rounded-2xl text-sm font-black text-blue-900 focus:ring-amber-400 focus:border-amber-400 shadow-inner px-6"
                       value={data.end_date}
                       onChange={(e) => setData("end_date", e.target.value)}
-                      required
                     />
                   </div>
                 </div>
