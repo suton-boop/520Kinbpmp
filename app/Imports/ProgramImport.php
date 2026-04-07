@@ -11,6 +11,7 @@ use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithStartRow;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ProgramImport implements ToCollection, WithStartRow
 {
@@ -63,8 +64,13 @@ class ProgramImport implements ToCollection, WithStartRow
                 if (empty($val)) continue;
 
                 // 1. Deteksi Anggaran (Ciri: Angka murni > 1000)
-                if (is_numeric($val) && (float)$val > 1000 && $anggaran === null) {
-                    $anggaran = $val;
+                // Filter out non-numeric characters for check to be sure, but strict is fine.
+                $clean_val = preg_replace('/[^0-9]/', '', $val);
+                if (is_numeric($clean_val) && (float)$clean_val > 1000 && $anggaran === null) {
+                    // Kalau isinya 99% angka, dia ini anggaran
+                    if (strlen($clean_val) > 4 && strlen($clean_val) >= strlen($val) - 2) {
+                        $anggaran = $clean_val;
+                    }
                 }
 
                 // 2. Deteksi Bulan (Ciri: Mengandung nama bulan)
@@ -78,13 +84,14 @@ class ProgramImport implements ToCollection, WithStartRow
                 }
             }
 
-            // Fallback jika scannner gagal (kembali ke index standar)
+            // Fallback jika scannner gagal
             if (!$anggaran) $anggaran = $row[8] ?? $row[9] ?? '';
             if (!$bulan) $bulan = $row[9] ?? $row[10] ?? '';
             if (!$gm_name_raw) $gm_name_raw = $row[11] ?? '';
 
             $submission = null;
             if ($this->reportId) {
+                // Pastikan target adalah sesuai yang ada di URL
                 $submission = ReportSubmission::find($this->reportId);
             }
 
@@ -103,14 +110,13 @@ class ProgramImport implements ToCollection, WithStartRow
                 }
                 if (!$gm && $this->gugusMutuId) $gm = GugusMutu::find($this->gugusMutuId);
                 
-                $userId = null;
+                $userId = auth()->id();
                 if ($gm) {
                     $operator = $gm->users()->whereHas('roles', function($q) {
                         $q->whereIn('name', ['user', 'staff']);
                     })->first();
-                    $userId = $operator ? $operator->id : $gm->users()->first()?->id;
+                    $userId = $operator ? $operator->id : ($gm->users()->first()?->id ?? auth()->id());
                 }
-                if (!$userId) $userId = auth()->id();
 
                 $submission = ReportSubmission::firstOrCreate([
                     'user_id' => $userId,
@@ -123,24 +129,30 @@ class ProgramImport implements ToCollection, WithStartRow
 
             if (!$submission) continue;
 
-            Activity::create([
-                'report_submission_id' => $submission->id,
-                'kode_pmo' => $kode,
-                'nama_kegiatan_turunan' => $kegiatan,
-                'deskripsi_kegiatan' => $indikator,
-                'hasil_kegiatan' => $hasil, 
-                'mekanisme_kegiatan' => $mekanisme,
-                'peserta_sasaran' => $row[6] ?? '', // Peserta biasanya di G
-                'tempat_kegiatan' => $row[7] ?? '', // Tempat biasanya di H
-                'jumlah_target' => 1,
-                'kode_rrkl' => $anggaran,
-                'rencana_start_date' => $this->parseDate($bulan),
-                'rencana_end_date' => $this->parseDate($bulan),
-                'nama_kegiatan_di_dipa' => $this->currentProgram,
-                'status_akhir' => 'Belum',
-            ]);
-            
-            $this->rowCount++;
+            // TRUNCATE STRING UNTUK MENCEGAH "DATA TOO LONG" DATABASE EXCEPTION!
+            try {
+                Activity::create([
+                    'report_submission_id' => $submission->id,
+                    'kode_pmo' => Str::limit($kode, 250, ''),
+                    'nama_kegiatan_turunan' => $kegiatan, // Text type
+                    'deskripsi_kegiatan' => $indikator,   // Text type
+                    'hasil_kegiatan' => $hasil,           // Text type
+                    'mekanisme_kegiatan' => Str::limit($mekanisme, 250, ''), // VARCHAR(255)
+                    'peserta_sasaran' => $row[6] ?? '',   // Text type
+                    'tempat_kegiatan' => Str::limit($row[7] ?? '', 250, ''), // VARCHAR(255)
+                    'jumlah_target' => '1',
+                    'kode_rrkl' => Str::limit($anggaran, 250, ''), // VARCHAR(255)
+                    'rencana_start_date' => $this->parseDate($bulan),
+                    'rencana_end_date' => $this->parseDate($bulan),
+                    'nama_kegiatan_di_dipa' => $this->currentProgram,
+                    'status_akhir' => 'Belum',
+                ]);
+                
+                $this->rowCount++;
+            } catch (\Exception $dbError) {
+                // Jika 1 baris gagal karena database, skip ke baris berikutnya jangan batalkan semuanya
+                Log::error("Gagal simpan baris activity Excel: " . $dbError->getMessage());
+            }
         }
     }
 
