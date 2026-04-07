@@ -1,4 +1,4 @@
-﻿import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link, router, useForm } from "@inertiajs/react";
 import {
   PlusIcon,
@@ -67,6 +67,9 @@ export default function Index({ auth, reports, userRole, allowImport }) {
     });
   };
 
+  // Roles that are allowed to perform actions
+  const canPerformActions = ["staff", "manager", "admin", "super-admin", "superadmin"].includes(userRole);
+
   return (
     <AuthenticatedLayout>
       <Head title="Manajemen Projek - Dashboardkin 520" />
@@ -85,9 +88,7 @@ export default function Index({ auth, reports, userRole, allowImport }) {
               </p>
             </div>
             <div className="mt-4 md:mt-0 flex gap-3">
-              {(userRole === "staff" ||
-                userRole === "admin" ||
-                userRole === "super-admin") && (
+              {canPerformActions && (
                 <Link
                   href={route("reports.store")}
                   method="post"
@@ -260,17 +261,13 @@ export default function Index({ auth, reports, userRole, allowImport }) {
                             className="inline-flex items-center px-4 py-2 border border-blue-900 rounded-xl text-blue-900 font-black text-[10px] uppercase tracking-widest hover:bg-blue-900 hover:text-white transition-all shadow-sm"
                           >
                             <EyeIcon className="w-4 h-4 mr-2" />
-                            {(userRole === "staff" ||
-                              userRole === "admin" ||
-                              userRole === "super-admin") &&
+                            {canPerformActions &&
                             report.approval_status === "Draft"
                               ? "Input Capaian"
                               : "Lihat Detail"}
                           </Link>
 
-                          {(userRole === "staff" ||
-                            userRole === "admin" ||
-                            userRole === "super-admin") &&
+                          {canPerformActions &&
                             (report.approval_status === "Draft" ||
                               report.approval_status.includes("Rejected")) && (
                               <div className="relative inline-block text-left group/btn">
