@@ -5,12 +5,19 @@ namespace App\Http\Controllers;
 use App\Models\Anggaran;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
 
 class AnggaranController extends Controller
 {
     public function index()
     {
+        $user = Auth::user();
+        $isAdmin = $user->hasRole(['admin', 'super-admin', 'superadmin']);
+
+        // Only admins can see inactive ones? Or everyone sees inactive ones but dimmed?
+        // Let's pass all to frontend, frontend handles display of active/inactive
         $data = Anggaran::whereNull('parent_id')->with('children')->orderBy('id')->get();
+        
         // Calculate percent
         $data->transform(function ($parent) {
             $parent->anggaran_persen = $parent->anggaran_alokasi > 0 
@@ -34,12 +41,18 @@ class AnggaranController extends Controller
         });
 
         return Inertia::render('Anggaran/Index', [
-            'anggaranData' => $data
+            'anggaranData' => $data,
+            'isAdmin' => $isAdmin
         ]);
     }
 
     public function store(Request $request)
     {
+        $user = Auth::user();
+        if (!$user->hasRole(['admin', 'super-admin', 'superadmin'])) {
+            return redirect()->back()->with('error', 'Hanya Admin yang dapat menambahkan anggaran.');
+        }
+
         $validated = $request->validate([
             'parent_id' => 'nullable|exists:anggarans,id',
             'urut' => 'nullable|integer',
@@ -64,6 +77,11 @@ class AnggaranController extends Controller
 
     public function update(Request $request, Anggaran $anggaran)
     {
+        $user = Auth::user();
+        if (!$user->hasRole(['admin', 'super-admin', 'superadmin'])) {
+            return redirect()->back()->with('error', 'Hanya Admin yang dapat mengubah anggaran.');
+        }
+
         $validated = $request->validate([
             'parent_id' => 'nullable|exists:anggarans,id',
             'urut' => 'nullable|integer',
@@ -86,8 +104,28 @@ class AnggaranController extends Controller
         return redirect()->back()->with('success', 'Data Anggaran berhasil diperbarui.');
     }
 
+    public function toggleActive(Request $request, Anggaran $anggaran)
+    {
+        $user = Auth::user();
+        if (!$user->hasRole(['admin', 'super-admin', 'superadmin'])) {
+            return redirect()->back()->with('error', 'Hanya Admin yang dapat mengubah status anggaran.');
+        }
+
+        $anggaran->update([
+            'is_active' => !$anggaran->is_active
+        ]);
+
+        $status = $anggaran->is_active ? 'diaktifkan' : 'dinonaktifkan';
+        return redirect()->back()->with('success', "Anggaran berhasil $status.");
+    }
+
     public function destroy(Anggaran $anggaran)
     {
+        $user = Auth::user();
+        if (!$user->hasRole(['admin', 'super-admin', 'superadmin'])) {
+            return redirect()->back()->with('error', 'Hanya Admin yang dapat menghapus anggaran.');
+        }
+
         $anggaran->delete();
         return redirect()->back()->with('success', 'Data Anggaran berhasil dihapus.');
     }

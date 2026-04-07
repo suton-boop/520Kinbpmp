@@ -59,7 +59,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/anggaran', [\App\Http\Controllers\AnggaranController::class, 'index'])->name('anggaran');
     Route::post('/anggaran', [\App\Http\Controllers\AnggaranController::class, 'store'])->name('anggaran.store');
     Route::put('/anggaran/{anggaran}', [\App\Http\Controllers\AnggaranController::class, 'update'])->name('anggaran.update');
+    Route::post('/anggaran/{anggaran}/toggle-active', [\App\Http\Controllers\AnggaranController::class, 'toggleActive'])->name('anggaran.toggle_active');
     Route::delete('/anggaran/{anggaran}', [\App\Http\Controllers\AnggaranController::class, 'destroy'])->name('anggaran.destroy');
+    
     Route::post('/Project/{id}/activities', [\App\Http\Controllers\ActivityController::class, 'store'])->name('activities.store');
     Route::put('/activities/{activity}', [\App\Http\Controllers\ActivityController::class, 'update'])->name('activities.update');
     Route::delete('/activities/{activity}', [\App\Http\Controllers\ActivityController::class, 'destroy'])->name('activities.destroy');

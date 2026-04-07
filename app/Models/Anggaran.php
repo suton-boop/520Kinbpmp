@@ -20,11 +20,13 @@ class Anggaran extends Model
         'anggaran_alokasi',
         'anggaran_realisasi',
         'kelengkapan',
+        'is_active',
     ];
 
     protected $casts = [
         'pelaksanaan' => 'decimal:2',
         'kelengkapan' => 'array',
+        'is_active' => 'boolean',
     ];
 
     // Get children
